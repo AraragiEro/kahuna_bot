@@ -1,0 +1,4 @@
+pydantic~=2.10.6
+esipy>=1.0.0
+qdm~=4.67.1
+peewee~=3.17.8

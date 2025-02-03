@@ -1,0 +1,98 @@
+from datetime import datetime, timedelta, timezone
+from peewee import DoesNotExist
+from playhouse.shortcuts import model_to_dict
+
+from .character import Character
+from ..database_server.model import Character as M_Character
+from ..evesso_server.eveesi import verify_token
+
+# import logger
+from ..log_server import logger
+
+#import Exception
+from ...utils import KahunaException
+
+class CharacterManager():
+    character_dict: dict = dict()
+
+    @classmethod
+    def init_character_dict(cls):
+        character_list = Character.get_all_characters()
+        for character in character_list:
+            character_obj = Character(
+                character_id=character.character_id,
+                character_name=character.character_name,
+                QQ=character.QQ,
+                create_date=character.create_date,
+                token=character.token,
+                refresh_token=character.refresh_token,
+                expires_date=character.expires_date,
+            )
+
+            cls.character_dict[character.character_id] = character_obj
+
+    @classmethod
+    def get_character_by_id(cls, character_id):
+        res = cls.character_dict.get(character_id, None)
+        if not res:
+            raise KahunaException('Character not found')
+        return res
+
+    @classmethod
+    def get_character_by_name_qq(cls, character_name: Character, qq):
+        for character in cls.character_dict.values():
+            if character.character_name == character_name and character.QQ == qq:
+                return character
+                break
+            raise KahunaException('无法使用qq和角色名匹配角色对象。请先进行授权。')
+
+    @classmethod
+    def create_new_character(cls, token_data, user_id):
+        character_verify_data = verify_token(token_data[0])
+        if not character_verify_data:
+            logger.error('No character info found')
+
+        character_id = character_verify_data['CharacterID']
+        character_name = character_verify_data['CharacterName']
+        expires_time = datetime.fromisoformat(character_verify_data["ExpiresOn"] + "Z")
+        expires_time = expires_time.astimezone(timezone(timedelta(hours=+8), 'Shanghai'))
+        try:
+            character = M_Character.get(M_Character.character_id == character_id)
+        except DoesNotExist:
+            character = M_Character()
+
+        character.character_id = character_id
+        character.character_name = character_name
+        character.QQ = user_id
+        character.create_date = datetime.now()
+        character.token = token_data[0]
+        character.refresh_token = token_data[1]
+        character.expires_date = expires_time
+
+        res = character.save()
+        cls.character_dict[character_id] = character
+
+        return model_to_dict(character)
+
+    @classmethod
+    def refresh_character_token(cls, character_id):
+        if character_id not in cls.character_dict:
+            raise KahunaException('Character not found')
+        character = cls.character_dict[character_id]
+        character.refresh_character_token()
+
+
+        return character
+
+    @classmethod
+    def get_user_all_characters(cls, user_id):
+        res_list = []
+        for character in cls.character_dict.values():
+            if character.QQ != user_id:
+                continue
+            res_list.append(character)
+        return res_list
+
+CharacterManager.init_character_dict()
+
+
