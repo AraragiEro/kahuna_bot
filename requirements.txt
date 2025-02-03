@@ -1,0 +1,10 @@
+
+tqdm~=4.67.1
+peewee~=3.17.8
+requests_oauthlib~=2.0.0
+networkx~=3.4.2
+cachetools~=5.5.1
+notion~=0.0.28
+thefuzz~=0.22.1
+psycopg2~=2.9.10
+lark-oapi~=1.4.9

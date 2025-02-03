@@ -1,0 +1,17 @@
+[FEISHU]
+APP_ID = MyApp
+SECRET_ID = 1.0
+
+[POSTGREDB]
+Host = localhost
+Port = 5432
+User = admin
+Password = secret
+
+[SQLITEDB]
+DATADB =
+SDEDB =
+
+[EVE]
+CLIENT_ID =
+SECRET_KEY =
