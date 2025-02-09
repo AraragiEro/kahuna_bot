@@ -24,8 +24,8 @@ def verify_token(access_token):
         return None
 
 
-def get_character_skill_point(access_token, cid):
-    url = f"https://esi.evetech.net/latest/characters/{cid}/skills/"
+def character_character_id_skills(access_token, character_id):
+    url = f"https://esi.evetech.net/latest/characters/{character_id}/skills/"
     headers = {"Authorization": f"Bearer {access_token}"}
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
@@ -35,8 +35,8 @@ def get_character_skill_point(access_token, cid):
         return None
 
 
-def get_character_wallet(access_token, cid):
-    url = f"https://esi.evetech.net/latest/characters/{cid}/wallet/"
+def character_character_id_wallet(access_token, character_id):
+    url = f"https://esi.evetech.net/latest/characters/{character_id}/wallet/"
     headers = {"Authorization": f"Bearer {access_token}"}
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
@@ -46,8 +46,8 @@ def get_character_wallet(access_token, cid):
         return None
 
 
-def get_character_portrait(access_token, cid):
-    url = f"https://esi.evetech.net/latest/characters/{cid}/portrait/"
+def character_character_id_portrait(access_token, character_id):
+    url = f"https://esi.evetech.net/latest/characters/{character_id}/portrait/"
     headers = {"Authorization": f"Bearer {access_token}"}
     response = requests.get(url, headers=headers)
     if response.status_code == 200:
@@ -55,6 +55,11 @@ def get_character_portrait(access_token, cid):
         return data  # modify this line to return the desired data
     else:
         return None
+
+def industry_systems():
+    return get_request(
+        f"https://esi.evetech.net/latest/industry/systems/"
+    )
 
 def markets_structures(page, access_token, structure_id):
     url = f"https://esi.evetech.net/latest/markets/structures/{structure_id}/"
@@ -125,6 +130,22 @@ def corporations_corporation_assets(page: int, access_token: str, corporation_id
         params={"page": page}
     )
 
+def corporations_corporation_id_roles(access_token: str, corporation_id: int):
+    return get_request(
+        f"https://esi.evetech.net/latest/corporations/{corporation_id}/roles/",
+        headers={"Authorization": f"Bearer {access_token}"}
+    )
+
+def corporations_corporation_id_industry_jobs(page: int, access_token: str, corporation_id: int, include_completed: bool = False):
+    return get_request(
+        f"https://esi.evetech.net/latest/corporations/{corporation_id}/industry/jobs/",
+        headers={"Authorization": f"Bearer {access_token}"},
+        params={
+            "page": page,
+            "include_completed": include_completed
+        }
+    )
+
 def universe_structures_structure(access_token: str, structure_id: int):
     """
     name*	string
@@ -142,7 +163,27 @@ def universe_structures_structure(access_token: str, structure_id: int):
     )
 
 def universe_stations_station(station_id):
-
     return get_request(
         f"https://esi.evetech.net/latest/universe/stations/{station_id}/"
+    )
+
+def characters_character_id_industry_jobs(access_token: str, character_id: int, include_completed: bool = False):
+    """
+    List character industry jobs
+    Args:
+        access_token: Access token
+        character_id: An EVE character ID
+        datasource: The server name you would like data from
+        include_completed: Whether to retrieve completed character industry jobs
+    Returns:
+        Industry jobs placed by a character
+    """
+    return get_request(
+        f"https://esi.evetech.net/latest/characters/{character_id}/industry/jobs/",
+        headers={
+            "Authorization": f"Bearer {access_token}"
+        },
+        params={
+            "include_completed": include_completed
+        }
     )

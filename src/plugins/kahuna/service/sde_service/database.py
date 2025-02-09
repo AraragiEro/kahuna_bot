@@ -1,8 +1,16 @@
+import os
 from peewee import SqliteDatabase
 from peewee import Model
 from peewee import CharField, IntegerField, TextField, FloatField
 
-db = SqliteDatabase('sde.sqlite')
+
+from ...utils import KahunaException
+
+if "KAHUNA_DB_DIR" not in os.environ:
+    raise KahunaException("KAHUNA_DB_DIR environment variable not set.")
+db_dir = os.path.join(os.environ["KAHUNA_DB_DIR"], "sde.sqlite")
+
+db = SqliteDatabase(db_dir)
 
 class BaseModel(Model):
     class Meta:
@@ -38,24 +46,37 @@ class InvTypes(BaseModel):
 
 # 蓝图原料信息
 class IndustryActivityMaterials(BaseModel):
-    blueprintTypeID = IntegerField()
-    activityID = IntegerField()
-    materialTypeID = IntegerField()
-    quantity = IntegerField()
-
+    blueprintTypeID = IntegerField()    # 蓝图id
+    activityID = IntegerField()         # 活动类型id
+    materialTypeID = IntegerField()     # 原料id
+    quantity = IntegerField()           # 原料数量
     class Meta:
         table_name = 'industryActivityMaterials'
 
 # 蓝图产品信息
 class IndustryActivityProducts(BaseModel):
-    blueprintTypeID = IntegerField()
-    activityID = IntegerField()
-    productTypeID = IntegerField()
-    quantity = IntegerField()
-    probability = FloatField()
+    blueprintTypeID = IntegerField()    # 蓝图id
+    activityID = IntegerField()         # 活动类型id
+    productTypeID = IntegerField()     # 产品id
+    quantity = IntegerField()           # 产品数量
+    probability = FloatField()          # 概率
 
     class Meta:
         table_name = 'industryActivityProducts'
+
+
+# 蓝图活动信息
+class IndustryActivities(BaseModel):
+    blueprintTypeID = IntegerField()    # 蓝图id
+    activityID = IntegerField()         # 活动类型id
+    time = IntegerField()               # 时间消耗
+
+    class Meta:
+        table_name = 'industryActivities'
+        indexes = (
+            (('blueprintTypeID', 'activityID'), True),  # 唯一索引
+            (('activityID',), False)  # 普通索引
+        )
 
 # 元组id信息
 class MetaGroups(BaseModel):
@@ -95,35 +116,40 @@ class InvCategories(BaseModel):
 
 class MapSolarSystems(BaseModel):
     solarSystemID = IntegerField(primary_key=True)
-    solarSystemName = CharField(max_length=100)
-    regionID = IntegerField()
-    constellationID = IntegerField()
-    x = FloatField()
-    y = FloatField()
-    z = FloatField()
-    x_Min = FloatField()
-    x_Max = FloatField()
-    y_Min = FloatField()
-    y_Max = FloatField()
-    z_Min = FloatField()
-    z_Max = FloatField()
-    luminosity = FloatField()
-    border = IntegerField()
-    corridor = IntegerField()
-    fringe = IntegerField()
-    hub = IntegerField()
-    international = IntegerField()
-    regional = IntegerField()
-    security = FloatField()
-    factionID = IntegerField()
-    radius = FloatField()
-    sunTypeID = IntegerField()
-    securityClass = CharField(max_length=2)
-    solarSystemNameID = IntegerField()
-    visualEffect = CharField()
-    descriptionID = IntegerField()
+    solarSystemName = CharField(max_length=100, null=True)
+    regionID = IntegerField(null=True)
+    constellationID = IntegerField(null=True)
+    x = FloatField(null=True)
+    y = FloatField(null=True)
+    z = FloatField(null=True)
+    x_Min = FloatField(null=True)
+    x_Max = FloatField(null=True)
+    y_Min = FloatField(null=True)
+    y_Max = FloatField(null=True)
+    z_Min = FloatField(null=True)
+    z_Max = FloatField(null=True)
+    luminosity = FloatField(null=True)
+    border = IntegerField(null=True)
+    corridor = IntegerField(null=True)
+    fringe = IntegerField(null=True)
+    hub = IntegerField(null=True)
+    international = IntegerField(null=True)
+    regional = IntegerField(null=True)
+    security = FloatField(null=True)
+    factionID = IntegerField(null=True)
+    radius = FloatField(null=True)
+    sunTypeID = IntegerField(null=True)
+    securityClass = CharField(max_length=2, null=True)
+    solarSystemNameID = IntegerField(null=True)
+    visualEffect = CharField(max_length=50, null=True)
+    descriptionID = IntegerField(null=True)
 
     class Meta:
+        indexes = (
+            (('constellationID',), False),
+            (('regionID',), False),
+            (('security',), False),
+        )
         table_name = 'mapSolarSystems'
 
 db.connect()

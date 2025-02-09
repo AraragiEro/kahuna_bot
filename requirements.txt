@@ -1,4 +1,12 @@
 pydantic~=2.10.6
 esipy>=1.0.0
-qdm~=4.67.1
+tqdm~=4.67.1
 peewee~=3.17.8
+nonebot2[fastapi]~=2.4.1
+nonebot-adapter-console~=0.6.0
+requests_oauthlib~=2.0.0
+networkx~=3.4.2
+cachetools~=5.5.1
+urllib3<2.0.0
+notion~=0.0.28
+openai~=1.61.1

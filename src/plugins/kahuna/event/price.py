@@ -7,7 +7,7 @@ from nonebot import on_command
 
 # kahuna model
 from .utils import kahuna_debug_info
-from ..service.market_server.price import PriceService
+from ..service.market_server import PriceService
 
 # kahuna Permission
 from ..permission_checker import PermissionChecker

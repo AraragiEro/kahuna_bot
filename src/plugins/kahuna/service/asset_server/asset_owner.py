@@ -10,6 +10,9 @@ from ..evesso_server.eveesi import corporations_corporation_assets
 from ..evesso_server.eveutils import find_max_page, get_multipages_result
 from ..character_server.character import Character
 
+# kahuna logger
+from ..log_server import logger
+
 # kahuna KahunaException
 
 # 查价缓存
@@ -19,7 +22,7 @@ JITA_TRADE_HUB_STRUCTURE_ID = 60003760
 FRT_4H_STRUCTURE_ID = 1035466617946
 
 
-class Asset():
+class AssetOwner():
     owner_qq = 0
     owner_type: str = "character"
     owner_id: int = 0
@@ -65,7 +68,7 @@ class Asset():
         obj.save()
 
     def delete_asset(self):
-        M_Asset.delete().where(M_Asset.asset_owner_id == self.owner_id &
+        M_Asset.delete().where(M_Asset.owner_id == self.owner_id &
                                M_Asset.asset_type == self.owner_type).execute()
 
     def get_asset(self):
@@ -80,21 +83,13 @@ class Asset():
         ac_token = self.access_character.ac_token
         max_page = find_max_page(asset_esi, ac_token, owner_id)
 
-        results = get_multipages_result(asset_esi, max_page,
-                                        ac_token, owner_id)
-        # with ThreadPoolExecutor(max_workers=100) as executor:
-        #     futures = [executor.submit(characters_character_assets, page, ac_token, self.access_character.character_id) for page in range(1, max_page + 1)]
-        #     results = []
-        #     count = 1
-        #     for future in tqdm(futures, desc="请求市场数据", unit="page"):
-        #         result = future.result()
-        #         results.append(result)
-        #         count += 1
+        logger.info("请求资产。")
+        results = get_multipages_result(asset_esi, max_page, ac_token, owner_id)
 
         with db.atomic():
             M_Asset.delete().where((M_Asset.asset_type == self.owner_type) & (M_Asset.owner_id == self.owner_id)).execute()
             with tqdm(total=len(results), desc="写入数据库", unit="page") as pbar:
-                for i, result in enumerate(results):
+                for result in results:
                     # result = [order for order in result if order["location_id"] == JITA_TRADE_HUB_STRUCTURE_ID]
                     for asset in result:
                         asset.update({"asset_type": self.owner_type, "owner_id": self.owner_id})
@@ -110,3 +105,4 @@ class Asset():
 
     def asset_valuation(self):
         pass
+

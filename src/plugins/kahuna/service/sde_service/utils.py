@@ -1,8 +1,8 @@
 from functools import lru_cache
 from pydantic import BaseModel
 
-from ..sde_service.database import InvTypes, InvGroups, InvCategories
-from ..sde_service.database import MetaGroups
+from ...service.sde_service.database import InvTypes, InvGroups, InvCategories
+from ...service.sde_service.database import MetaGroups
 
 def get_t2_ship() -> list:
     t2_search = (

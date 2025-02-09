@@ -27,18 +27,17 @@ from ..service.log_server import logger
 # 用户管理器，超级用户限定
 user_manager = on_command("user",
                           aliases={
+                              ("user"),
                               ("user", "createUser"),
                               ("user", "addMemberTime"),
                               ("user", "clearMemberTime"),
                               ("user", "deleteUser"),
                           },
                           permission=PermissionChecker.admin,
-                          rule=to_me(),
                           priority=10, block=True)
-# 用户查询自己信息
-user_checkself = on_command("selfinfo", rule=to_me(), priority=10, block=True, permission=PermissionChecker.admin)
+
 # 用户注册
-user_sign = on_command("sign", rule=to_me(), priority=10, block=True)
+kahuna_cmd_user_sign = on_command("sign", priority=10, block=True)
 
 @user_manager.handle()
 async def user_manager_func(
@@ -49,10 +48,10 @@ async def user_manager_func(
         raw_command: str = RawCommand()
     ):
     HELP = """USAGE:
-user.createUser [qq]
-user.addMemberTime [qq] [day]
-user.clearMemberTime [qq]
-user.deleteUser [qq]
+.user.createUser [qq]
+.user.addMemberTime [qq] [day]
+.user.clearMemberTime [qq]
+.user.deleteUser [qq]
 """
     # debug info
     args_text, user_qq = kahuna_debug_info(event, args, raw_command)
@@ -86,23 +85,44 @@ user.deleteUser [qq]
     except IndexError as e:
         logger.error(traceback.format_exc())
 
-@user_checkself.handle()
+# 用户查询自己信息
+kahuna_cmd_self = on_command("self",
+                             aliases={
+                                ('self', 'info'),
+                                ('self', 'setMainCharacter')
+                            },
+                             priority=10, block=True, permission=PermissionChecker.admin)
+@kahuna_cmd_self.handle()
 async def user_checkself_func(matcher: Matcher,
                               event: Event,
                               args: Message = CommandArg(),
                               raw_command: str = RawCommand(),
-                              cmd: Tuple = Command()):
+                              cmd: tuple[str, ...] = Command()):
     # debug info
-    args_list, user_qq = kahuna_debug_info(event, args, raw_command)
+    args_text, user_qq = kahuna_debug_info(event, args, raw_command)
+
+    HELP=""".self 用法：
+1. 查询自己用户信息
+    .self.info
+2. 设置esi权限访问主角色，主要用于角色组机库权限检查等。 
+    .self.setMainCharacter [角色名]
+"""
 
     try:
-        user = UserManager.get_user(user_qq)
-        await matcher.finish(user.info)
-
+        if len(cmd) == 2:
+            if cmd[1] == "info":
+                user = UserManager.get_user(user_qq)
+                await matcher.finish(user.info)
+            elif cmd[1] == "setMainCharacter":
+                character_name = args[0]
+                UserManager.set_main_character(user_qq, character_name)
+                await matcher.finish("")
+        else:
+            await matcher.finish(HELP)
     except KahunaException as e:
         await matcher.finish(e.message)
 
-@user_sign.handle()
+@kahuna_cmd_user_sign.handle()
 async def sign_func(
         matcher: Matcher,
         event: Event,

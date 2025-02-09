@@ -1,7 +1,8 @@
 from peewee import SqliteDatabase
 from peewee import Model
-from peewee import FloatField, DecimalField, CharField, TextField, DateTimeField, BooleanField, IntegerField
+from peewee import FloatField, DecimalField, CharField, TextField, DateTimeField, BooleanField, IntegerField, DoubleField
 from peewee import BigIntegerField
+from peewee import SQL
 from .connect import db
 
 __all__ = []
@@ -16,6 +17,7 @@ class User(BaseModel):
     user_qq = IntegerField(unique=True)
     create_date = DateTimeField()
     expire_date = DateTimeField()
+    main_character_id = IntegerField()
 __all__.append('User')
 MODEL_LIST.append(User)
 
@@ -27,6 +29,8 @@ class Character(BaseModel):
     token = TextField()
     refresh_token = TextField()
     expires_date = DateTimeField()
+    corp_id = IntegerField()
+    director = BooleanField()
 
     class Meta:
         table_name = 'character'
@@ -44,12 +48,18 @@ __all__.append('Structure')
 MODEL_LIST.append(Structure)
 
 class AssetContainer(BaseModel):
-    asset_location_id = IntegerField(unique=True)
+    asset_location_id = IntegerField()
+    asset_location_type = CharField()
     structure_id = IntegerField()
+    solar_system_id = IntegerField()
     asset_name = TextField()
+    asset_owner_id = IntegerField()
+    asset_owner_type = CharField()
     asset_owner_qq = IntegerField()
+
     class Meta:
         table_name = 'asset_container'
+        constraints = [SQL('UNIQUE(asset_location_id, asset_location_type)')]
 __all__.append(AssetContainer.__name__)
 MODEL_LIST.append(AssetContainer)
 
@@ -133,3 +143,93 @@ class MarketOrderCache(BaseModel):
         table_name = 'market_order_cache'
 __all__.append(MarketOrderCache.__name__)
 MODEL_LIST.append(MarketOrderCache)
+
+
+class IndustryJobs(BaseModel):
+    activity_id = IntegerField()
+    blueprint_id = BigIntegerField()
+    blueprint_location_id = BigIntegerField()
+    blueprint_type_id = IntegerField()
+    completed_character_id = IntegerField(null=True)
+    completed_date = DateTimeField(null=True)
+    cost = DoubleField(null=True)
+    duration = IntegerField()
+    end_date = DateTimeField()
+    facility_id = BigIntegerField()
+    installer_id = IntegerField()
+    job_id = IntegerField()
+    licensed_runs = IntegerField(null=True)
+    location_id = BigIntegerField() # station_id in character api return
+    output_location_id = BigIntegerField()
+    pause_date = DateTimeField(null=True)
+    probability = FloatField(null=True)
+    product_type_id = IntegerField(null=True)
+    runs = IntegerField()
+    start_date = DateTimeField()
+    status = CharField()
+    successful_runs = IntegerField(null=True)
+
+    owner_id = IntegerField()
+
+    class Meta:
+        table_name = 'industry_jobs'
+__all__.append(IndustryJobs.__name__)
+MODEL_LIST.append(IndustryJobs)
+
+class IndustryJobsCache(BaseModel):
+    activity_id = IntegerField()
+    blueprint_id = BigIntegerField()
+    blueprint_location_id = BigIntegerField()
+    blueprint_type_id = IntegerField()
+    completed_character_id = IntegerField(null=True)
+    completed_date = DateTimeField(null=True)
+    cost = DoubleField(null=True)
+    duration = IntegerField()
+    end_date = DateTimeField()
+    facility_id = BigIntegerField()
+    installer_id = IntegerField()
+    job_id = IntegerField()
+    licensed_runs = IntegerField(null=True)
+    location_id = BigIntegerField() # station_id in character api return
+    output_location_id = BigIntegerField()
+    pause_date = DateTimeField(null=True)
+    probability = FloatField(null=True)
+    product_type_id = IntegerField(null=True)
+    runs = IntegerField()
+    start_date = DateTimeField()
+    status = CharField()
+    successful_runs = IntegerField(null=True)
+
+    owner_id = IntegerField()
+    class Meta:
+        table_name = 'industry_jobs_cache'
+__all__.append(IndustryJobsCache.__name__)
+MODEL_LIST.append(IndustryJobsCache)
+
+class SystemCost(BaseModel):
+    solar_system_id = IntegerField(primary_key=True)
+    manufacturing = FloatField(null=True)
+    researching_time_efficiency = FloatField(null=True)
+    researching_material_efficiency = FloatField(null=True)
+    copying = FloatField(null=True)
+    invention = FloatField(null=True)
+    reaction = FloatField(null=True)
+
+    class Meta:
+        table_name = "system_cost"
+__all__.append(SystemCost.__name__)
+MODEL_LIST.append(SystemCost)
+
+class SystemCostCache(BaseModel):
+    solar_system_id = IntegerField(primary_key=True)
+    manufacturing = FloatField(null=True)
+    researching_time_efficiency = FloatField(null=True)
+    researching_material_efficiency = FloatField(null=True)
+    copying = FloatField(null=True)
+    invention = FloatField(null=True)
+    reaction = FloatField(null=True)
+
+    class Meta:
+        table_name = "system_cost_cache"
+__all__.append(SystemCostCache.__name__)
+MODEL_LIST.append(SystemCostCache)

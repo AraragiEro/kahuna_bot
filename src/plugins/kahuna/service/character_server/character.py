@@ -1,6 +1,6 @@
 from oauthlib.oauth2 import InvalidClientIdError
 from pydantic import BaseModel
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from ..database_server.model import Character as M_Character
 from ..evesso_server.oauth import refresh_token
@@ -15,6 +15,8 @@ class Character(BaseModel):
     token: str
     refresh_token: str
     expires_date: datetime
+    corp_id: int
+    director: bool = False
 
     @staticmethod
     def get_all_characters():
@@ -35,6 +37,8 @@ class Character(BaseModel):
         obj.token = self.token
         obj.refresh_token = self.refresh_token
         obj.expires_date = self.expires_date
+        obj.corp_id = self.corp_id
+        obj.director = self.director
 
         obj.save()
 
@@ -49,6 +53,7 @@ class Character(BaseModel):
             self.token = refresh_res_dict['access_token']
             self.refresh_token = refresh_res_dict['refresh_token']
             self.expires_date = datetime.fromtimestamp(refresh_res_dict['expires_at'])
+            self.expires_date = self.expires_date.astimezone(timezone(timedelta(hours=+8), 'Shanghai'))
 
         self.insert_to_db()
 
@@ -60,7 +65,7 @@ class Character(BaseModel):
 
     @property
     def token_avaliable(self):
-        return self.expires_date > datetime.now()
+        return self.expires_date.replace(tzinfo=None) > datetime.now().replace(tzinfo=None)
 
     @property
     def info(self):

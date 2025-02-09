@@ -2,11 +2,13 @@ from pydantic import BaseModel
 from datetime import datetime, timedelta
 
 from ..database_server.model import User as M_User
+from ..character_server import CharacterManager
 
 class User(BaseModel):
     qq: int
     create_date: datetime
     expire_date: datetime
+    main_character_id: int = 0
     character_list: list = []
 
     def get_from_db(self):
@@ -32,7 +34,8 @@ class User(BaseModel):
         return (f"用户:{self.qq}\n"
                 f"创建时间:{self.create_date}\n"
                 f"到期时间:{self.expire_date}\n"
-                f"剩余时间:{max(timedelta(), self.expire_date - datetime.now())}")
+                f"剩余时间:{max(timedelta(), self.expire_date - datetime.now())}\n"
+                f"主角色：{CharacterManager.get_character_by_id(self.main_character_id).character_name}\n")
 
     @property
     def member_status(self):

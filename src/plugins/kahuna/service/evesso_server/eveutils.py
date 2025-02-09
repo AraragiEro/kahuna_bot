@@ -28,13 +28,12 @@ def find_max_page_binary_search(esi_func, start, end, *args, **kwargs):
         return find_max_page_binary_search(esi_func, start, mid, *args, **kwargs)
 
 
-def find_max_page(esi_func, *args, **kwargs):
+def find_max_page(esi_func, *args, begin_page: int = 500, interval: int = 500, **kwargs):
     initial_page = 1
-    interval = 500
     page = initial_page
 
     # Check pages in the specified interval
-    page += interval
+    page += begin_page
     if esi_func(page, *args, **kwargs):
         page += interval
 
@@ -48,7 +47,7 @@ def get_multipages_result(esi_func, max_page, *args, **kwargs):
                    page in range(1, max_page + 1)]
         results = []
         count = 1
-        for future in tqdm(futures, desc="请求市场数据", unit="page"):
+        for future in tqdm(futures, desc="请求数据", unit="page"):
             result = future.result()
             results.append(result)
             count += 1

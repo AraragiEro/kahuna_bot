@@ -1,4 +1,4 @@
-from ..industry_server.item import get_id_by_name
+from ..sde_service.utils import get_id_by_name
 from ..market_server.market_manager import MarketManager
 
 from ...utils import KahunaException

@@ -3,6 +3,7 @@ from cachetools import TTLCache
 
 from .user import User
 from ..database_server.model import User as M_User
+from ..character_server import CharacterManager
 
 # import Exception
 from ...utils import KahunaException
@@ -21,7 +22,24 @@ class UserManager:
                 create_date=user.create_date,
                 expire_date=user.expire_date
             )
+            if user.main_character_id:
+                usr_obj.main_character_id = user.main_character_id
             cls.user_dict[usr_obj.qq] = usr_obj
+
+    @classmethod
+    def get_main_character_id(cls, qq: int):
+        user = cls.user_dict.get(qq, None)
+        if not user:
+            raise KahunaException("用户qq不存在。")
+        return user.main_character_id
+
+    @classmethod
+    def set_main_character(cls, qq: int, main_character: str):
+        user = cls.get_main_character_id(qq)
+        main_character = CharacterManager.get_character_by_name_qq(main_character, qq)
+        user.main_character_id = main_character.character_id
+
+        user.insert_to_db()
 
     @classmethod
     def create_user(cls, qq: int) -> User:
