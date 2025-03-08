@@ -2,7 +2,7 @@ from astrbot.core.star.filter.custom_filter import CustomFilter
 from astrbot.api.event import AstrMessageEvent
 from astrbot.core.config import AstrBotConfig
 
-from src.service.user_server.user_manager import UserManager
+from .src.service.user_server.user_manager import UserManager
 from datetime import datetime
 from .src.service.log_server import logger
 from .src.utils import KahunaException
