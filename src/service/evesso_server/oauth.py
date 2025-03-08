@@ -32,8 +32,7 @@ def get_token(AUTH_RES):
     oauth.fetch_token(
         'https://login.eveonline.com/oauth/token',
         authorization_response=AUTH_RES,
-        client_secret=secret_key,
-        proxies=PROXY
+        client_secret=secret_key #, proxies=PROXY
     )
 
     access_token = oauth.token.get("access_token")
@@ -49,8 +48,7 @@ def refresh_token(refresh_token):
         'https://login.eveonline.com/oauth/token',
         refresh_token=refresh_token,
         client_id=client_id,
-        client_secret=secret_key,
-        proxies=PROXY
+        client_secret=secret_key #, proxies=PROXY
     )
 
     logger.info(f"token refreshed. {newtocker_dict}")

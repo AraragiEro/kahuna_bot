@@ -4,6 +4,8 @@ from cachetools import TTLCache, cached
 # kahuna logger
 from ..log_server import logger
 
+permission_set = set()
+
 def get_request(url, headers=dict(), params=dict()):
     response = requests.get(url, params=params, headers=headers)
     if response.status_code == 200:
