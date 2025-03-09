@@ -39,13 +39,16 @@ class CharacterManager(metaclass=PluginMeta):
                 )
                 cls.character_dict[character.character_id] = character_obj
 
-
-            cls.refresh_all_characters_token()
-            cls.refresh_all_character_directer()
-            for character_obj in cls.character_dict.values():
-                character_obj.insert_to_db()
-        cls.init_status = True
         logger.info(f"init character dict complete. {id(cls)}")
+
+    @classmethod
+    def refresh_all_characters_at_init(cls):
+        cls.refresh_all_characters_token()
+        cls.refresh_all_character_directer()
+        for character_obj in cls.character_dict.values():
+            character_obj.insert_to_db()
+
+        cls.init_status = True
 
     @classmethod
     def refresh_all_characters_token(cls):

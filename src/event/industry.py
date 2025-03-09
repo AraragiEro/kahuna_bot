@@ -409,14 +409,18 @@ class IndsEvent:
         return event.plain_result("执行完成")
 
     @staticmethod
-    def rp_all(event: AstrMessageEvent, plan_name: str):
+    async def rp_all(event: AstrMessageEvent, plan_name: str):
         user_qq = int(event.get_sender_id())
         user = UserManager.get_user(user_qq)
         if plan_name not in user.user_data.plan:
             raise KahunaException(f"plan {plan_name} not exist")
 
-        analyser = IndustryAnalyser.get_analyser_by_plan(user, plan_name)
-        report = analyser.get_work_tree_data()
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            analyser = IndustryAnalyser.get_analyser_by_plan(user, plan_name)
+            future = executor.submit(analyser.get_work_tree_data)
+            while not future.done():
+                await asyncio.sleep(1)
+            report = future.result()
 
         spreadsheet = FeiShuKahuna.create_user_spreadsheet(user_qq)
         FeiShuKahuna.create_default_spreadsheet(spreadsheet)

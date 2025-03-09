@@ -24,24 +24,41 @@ from .src.service.industry_server.structure import StructureManager
 from .src.service.industry_server.industry_manager import IndustryManager
 from .src.service.industry_server.industry_config import IndustryConfigManager
 
-from .src.utils import refresh_per_min
+from .src.utils import refresh_per_min, run_func_delay_min
 
 # 环境变量
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 @register("KAHUNA_BOT", "Alero", "一个eveonline综合性插件", "0.0.1", "repo url")
 class MyPlugin(Star):
+    """
+    The `MyPlugin` class.
+
+    This is a plugin class for an EVE Online integrated application. It registers various command groups
+    and commands to handle user interactions involving EVE Online in-game features such as market
+    operations, character management, industry configurations, and more. This class leverages
+    asynchronous tasks to initiate various periodic refresh jobs related to market, asset management,
+    and industrial system data.
+
+    Attributes
+    ----------
+    context : Context
+        An instance of the `Context` class, used to provide the operational context for the plugin.
+    """
     def __init__(self, context: Context):
         super().__init__(context)
         # 初始化
         # asyncio.create_task(self.init_plugin())
 
+        # 延时初始化
+        asyncio.create_task(run_func_delay_min(0, CharacterManager.refresh_all_characters_at_init))
+
         # 定时刷新任务
-        asyncio.create_task(refresh_per_min(0, 360, MarketManager.refresh_market))
-        asyncio.create_task(refresh_per_min(0, 10, AssetManager.refresh_all_asset))
-        asyncio.create_task(refresh_per_min(0, 10, IndustryManager.refresh_running_status))
-        asyncio.create_task(refresh_per_min(0, 60, IndustryManager.refresh_system_cost))
-        asyncio.create_task(refresh_per_min(0, 60, IndustryManager.refresh_market_price))
+        asyncio.create_task(refresh_per_min(1, 360, MarketManager.refresh_market))
+        asyncio.create_task(refresh_per_min(2, 10, AssetManager.refresh_all_asset))
+        asyncio.create_task(refresh_per_min(3, 10, IndustryManager.refresh_running_status))
+        asyncio.create_task(refresh_per_min(4, 60, IndustryManager.refresh_system_cost))
+        asyncio.create_task(refresh_per_min(5, 60, IndustryManager.refresh_market_price))
 
     # async def init_plugin(self):
         # await CharacterManager.init_character_dict()
@@ -291,7 +308,7 @@ class MyPlugin(Star):
     @Inds_rp.command('计划报表', alias={'workrp'})
     async def Inds_rp_workrp(self, event: AstrMessageEvent, plan_name: str):
         """ 计划材料清单 """
-        yield IndsEvent.rp_all(event, plan_name)
+        yield await IndsEvent.rp_all(event, plan_name)
 
     @Inds_rp.command('t2市场', alias={'t2mk'})
     async def Inds_rp_t2cost(self, event: AstrMessageEvent, plan_name: str):

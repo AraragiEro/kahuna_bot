@@ -21,6 +21,13 @@ class PluginMeta(type):  # 定义元类
         # 每次类被创建时，自动运行 init
         cls.init()
 
+async def run_func_delay_min(start_delay, func, *args, **kwargs):
+    await asyncio.sleep(start_delay * 60)
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        future = executor.submit(func, *args, **kwargs)
+        while not future.done():
+            await asyncio.sleep(1)
+
 async def refresh_per_min(start_delay, interval, func):
     await asyncio.sleep(start_delay * 60)
     with ThreadPoolExecutor(max_workers=1) as executor:

@@ -49,7 +49,7 @@ class Character(BaseModel):
             refresh_res_dict = refresh_token(self.refresh_token)
         except (InvalidClientIdError, InvalidScopeError) as e:
             logger.error(f"Caught an exception: {type(e).__name__}, message: {str(e)}")
-            logger.error(f"QQ:{self.QQ}: {self.character_name} failed to refresh token")
+            raise KahunaException(f"QQ:{self.QQ}: {self.character_name} failed to refresh token")
         if refresh_res_dict:
             self.token = refresh_res_dict['access_token']
             self.refresh_token = refresh_res_dict['refresh_token']

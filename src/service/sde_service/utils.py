@@ -102,6 +102,14 @@ class SdeUtils:
 
     @staticmethod
     @lru_cache(maxsize=1000)
+    def get_invtype_packagedvolume_by_id(invtpye_id: int) -> float:
+        try:
+            return InvTypes.get(InvTypes.typeID == invtpye_id).packagedVolume
+        except InvTypes.DoesNotExist:
+            return 0
+
+    @staticmethod
+    @lru_cache(maxsize=1000)
     def get_metaname_by_metaid(meta_id: int) -> str:
         try:
             return MetaGroups.get(MetaGroups.metaGroupID == meta_id).nameID
