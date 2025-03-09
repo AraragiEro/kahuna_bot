@@ -136,7 +136,7 @@ class FeiShuKahuna:
 
         transport_list_head = ['提供', '需求', '物品', '数量', '体积']
         transport_list = [[key[0], key[1], SdeUtils.get_name_by_id(key[2]), value,
-                           SdeUtils.get_invtype_packagedvolume_by_id(key[2])]
+                           SdeUtils.get_invtype_packagedvolume_by_id(key[2]) * value]
                           for key, value in transport_data.items()]
         transport_list.sort(key=lambda x: x[0], reverse=True)
         transport_list = [transport_list_head] + transport_list

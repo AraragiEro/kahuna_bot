@@ -54,11 +54,11 @@ class MyPlugin(Star):
         asyncio.create_task(run_func_delay_min(0, CharacterManager.refresh_all_characters_at_init))
 
         # 定时刷新任务
-        asyncio.create_task(refresh_per_min(1, 360, MarketManager.refresh_market))
-        asyncio.create_task(refresh_per_min(2, 10, AssetManager.refresh_all_asset))
-        asyncio.create_task(refresh_per_min(3, 10, IndustryManager.refresh_running_status))
-        asyncio.create_task(refresh_per_min(4, 60, IndustryManager.refresh_system_cost))
-        asyncio.create_task(refresh_per_min(5, 60, IndustryManager.refresh_market_price))
+        asyncio.create_task(refresh_per_min(0, 360, MarketManager.refresh_market))
+        asyncio.create_task(refresh_per_min(0, 10, AssetManager.refresh_all_asset))
+        asyncio.create_task(refresh_per_min(0, 10, IndustryManager.refresh_running_status))
+        asyncio.create_task(refresh_per_min(0, 60, IndustryManager.refresh_system_cost))
+        asyncio.create_task(refresh_per_min(0, 60, IndustryManager.refresh_market_price))
 
     # async def init_plugin(self):
         # await CharacterManager.init_character_dict()
