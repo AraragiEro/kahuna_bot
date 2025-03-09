@@ -142,7 +142,7 @@ class AssetManager(metaclass=PluginMeta):
     @classmethod
     def set_container_tag(cls, require_list: list[int, int], tag: str):
         if tag not in ContainerTag.__members__:
-            raise KahunaException("tag must be [bp, reac, manu]")
+            raise KahunaException(f"tag must be {ContainerTag.__members__}")
         success_list = []
         for owner_qq, container_id in require_list:
             if (owner_qq, container_id) not in cls.container_dict:

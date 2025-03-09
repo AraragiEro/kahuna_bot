@@ -60,15 +60,6 @@ class MyPlugin(Star):
         asyncio.create_task(refresh_per_min(0, 60, IndustryManager.refresh_system_cost))
         asyncio.create_task(refresh_per_min(0, 60, IndustryManager.refresh_market_price))
 
-    # async def init_plugin(self):
-        # await CharacterManager.init_character_dict()
-        # await UserManager.init_user_dict()
-        # await AssetManager.init_asset_dict()
-        # await AssetManager.init_container_dict()
-        # await MarketManager.init_market()
-        # await StructureManager.init_structure_dict()
-        # await IndustryConfigManager.init_matcher_dict()
-
     # 注册指令的装饰器。指令名为 helloworld。注册成功后，发送 `/helloworld` 就会触发这个指令，并回复 `你好, {user_name}!`
     # @filter.custom_filter(SelfFilter1)
     @filter.command("helloworld")
@@ -128,7 +119,7 @@ class MyPlugin(Star):
     async def user_clearvip(self, event: AstrMessageEvent, user_qq: int):
         yield UserEvent.clearMemberTime(event, user_qq)
 
-    @filter.command_group("my")
+    @filter.command_group("我的", alias={"my"})
     async def my(self, event: AstrMessageEvent):
         pass
 
@@ -193,7 +184,7 @@ class MyPlugin(Star):
     async def asset_container_find(self, event: AstrMessageEvent, secret_type: str):
         yield AssetEvent.container_find(event, secret_type)
 
-    @asset_container.command('标签', alias={"settag"})
+    @asset_container.command('设置标签', alias={"settag"})
     async def asset_container_settag(self, event: AstrMessageEvent, location_id_list: str, tag: str):
         yield AssetEvent.container_settag(event, location_id_list, tag)
 
@@ -267,7 +258,7 @@ class MyPlugin(Star):
     async def Inds_plan(self, event: AstrMessageEvent):
         pass
 
-    @Inds_plan.command('创建', "create")
+    @Inds_plan.command('创建计划', "create")
     async def Inds_plan_create(self, event: AstrMessageEvent, plan_name: str,
                                bp_matcher: str, st_matcher: str, prod_block_matcher: str
                                ):
@@ -289,7 +280,7 @@ class MyPlugin(Star):
     async def Inds_plan_setprod(self, event: AstrMessageEvent, plan_name: str):
         yield IndsEvent.plan_setprod(event, plan_name)
 
-    @Inds_plan.command('删除产物', alias={"delprod"})
+    @Inds_plan.command('删除产品', alias={"delprod"})
     async def Inds_plan_delprod(self, event: AstrMessageEvent, plan_name: str, index: str):
         yield IndsEvent.plan_delprod(event, plan_name, index)
 
@@ -345,7 +336,6 @@ class MyPlugin(Star):
     async def sde_findtype(self, event: AstrMessageEvent, message: str):
         yield SdeEvent.findtype(event)
 
-    # @filter.command("test")
-    # async def test(self, event: AstrMessageEvent):
-    #     from .src.service.industry_server.industry_analyse import BpAnalyser
-    #     BpAnalyser.get_product_work_materials()
+    @filter.command("test")
+    async def test(self, event: AstrMessageEvent, require_str: str):
+        yield TypesPriceEvent.test_func(event, require_str)

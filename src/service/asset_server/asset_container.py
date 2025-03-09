@@ -12,6 +12,7 @@ class ContainerTag(Enum):
     bp = 'blueprint'
     reac = 'reaction'
     manu = 'manufacturing'
+    sell = 'sell'
 
 class AssetContainer:
     asset_location_id = 0

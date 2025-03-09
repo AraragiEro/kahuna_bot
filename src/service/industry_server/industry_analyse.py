@@ -721,11 +721,7 @@ class IndustryAnalyser():
 
     @classmethod
     def get_analyser_by_plan(cls, user, plan_name):
-        if (user.user_qq, plan_name) not in cls.analyser_cache:
-            analyser = cls.create_analyser_by_plan(user, plan_name)
-            cls.analyser_cache[(user.user_qq, plan_name)] = analyser
-            return analyser
-        return cls.analyser_cache[(user.user_qq, plan_name)]
+        return cls.create_analyser_by_plan(user, plan_name)
 
     def get_work_tree_data(self):
         self.clean_analyser()

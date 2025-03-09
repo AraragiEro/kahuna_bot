@@ -174,7 +174,7 @@ class User():
         self.user_data.plan[plan_name]["prod_block_matcher"] = prod_block_matcher.matcher_name
         self.user_data.plan[plan_name]["manucycletime"] = 24 # hour
         self.user_data.plan[plan_name]['reaccycletime'] = 24
-        self.user_data.plan[plan_name]["plan"] = {}
+        self.user_data.plan[plan_name]["plan"] = []
         self.user_data.insert_to_db()
 
     def delete_plan_prod(self, plan_name: str, index: int):
