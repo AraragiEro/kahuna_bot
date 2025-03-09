@@ -86,6 +86,7 @@ class IndustryAnalyser():
         self.total_need_work_list_dict = dict()
         self.running_job = dict()  # { type_id: runs }
         self.target_container = set()
+        self.hide_container = set()
         self.asset_dict = dict()
 
         self.bp_runs_dict = dict()
@@ -180,7 +181,9 @@ class IndustryAnalyser():
 
     def get_target_container(self):
         container_list = AssetManager.get_user_container(self.owner_qq)
-        self.target_container = set(container.asset_location_id for container in container_list if container.tag in {"manu", "reac"})
+        self.target_container = set(container.asset_location_id for container in container_list
+                                    if (container.tag in {"manu", "reac"} and
+                                        container.asset_location_id not in self.hide_container))
 
     def get_asset_in_container(self):
         if not self.target_container:
@@ -212,6 +215,7 @@ class IndustryAnalyser():
         self.bfs_bp_tree(bfs_queue, dg)
         memo = dict()
         root_depth = self.longest_path_dag('root', memo)
+        self.update_layer_depth('root')
         return dg
 
     # 递归计算最长路径，并添加备忘录优化
@@ -237,6 +241,16 @@ class IndustryAnalyser():
         memo[node] = max_depth + 1
         self.bp_graph.nodes[node]['depth'] = memo[node]
         return memo[node]
+
+    def update_layer_depth(self, node):
+        if node != 'root' and self.bp_graph.nodes[node]['depth'] != 1:
+            max_depth = 0
+            for pre in self.bp_graph.predecessors(node):
+                max_depth = max(max_depth, self.bp_graph.nodes[pre]['depth'])
+            self.bp_graph.nodes[node]['depth'] = max_depth - 1
+
+        for suss in self.bp_graph.successors(node):
+            self.update_layer_depth(suss)
 
     def bfs_bp_tree(self, bfs_queue: list, dg: nx.DiGraph = None):
         """
@@ -714,6 +728,7 @@ class IndustryAnalyser():
         analyser.set_plan_list(plan_dict["plan"])
         analyser.manu_cycle_time = plan_dict['manucycletime']
         analyser.reac_cycle_time = plan_dict["reaccycletime"]
+        analyser.hide_container = set(plan_dict["container_block"])
         # analyser.manu_lines = plan_dict["manulinenum"]
         # analyser.reac_lines = plan_dict["reaclinenum"]
 
@@ -735,7 +750,8 @@ class IndustryAnalyser():
                         "燃料块": [],
                         "元素": [],
                         "气云": [],
-                        "杂货": []},
+                        "杂货": [],
+                        "反应物": []},
             'work_flow': dict(),
             'logistic': dict()
         }
@@ -958,6 +974,7 @@ class IndustryAnalyser():
         # 获取 Group 和 Category 信息
         group = SdeUtils.get_groupname_by_id(type_id)
         category = SdeUtils.get_category_by_id(type_id)
+        mk_list = SdeUtils.get_market_group_list(type_id)
         work_node = self.work_graph.nodes[type_id]
         global_node = self.global_graph.nodes[type_id]
         market = MarketManager.get_market_by_type('jita')
@@ -994,6 +1011,8 @@ class IndustryAnalyser():
             result_dict["气云"].append(data)
         elif category == "Planetary Commodities":
             result_dict["行星工业"].append(data)
+        elif 'Reaction Materials' in mk_list:
+            result_dict['反应物'].append(data)
         else:
             result_dict["杂货"].append(data)
 

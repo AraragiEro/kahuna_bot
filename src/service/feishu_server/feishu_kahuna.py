@@ -21,17 +21,17 @@ class FeiShuKahuna:
         cls.client.set_folder_token(folder_token)
 
     @classmethod
-    def get_user_sheet_name(self, user_qq: str):
-        return f"kahunaBot_{user_qq}_data"
+    def get_user_plan_sheet_name(self, user_qq: int, plan_name):
+        return f"kahunaBot_{user_qq}_{plan_name}_data"
 
     @classmethod
-    def create_user_spreadsheet(cls, user_qq: int) -> Spreadsheets:
-        user_sheet_name = cls.get_user_sheet_name(user_qq)
-        return cls.client.create_spreadsheets(user_sheet_name)
+    def create_user_plan_spreadsheet(cls, user_qq: int, plan_name: str) -> Spreadsheets:
+        sheet_name = cls.get_user_plan_sheet_name(user_qq, plan_name)
+        return cls.client.create_spreadsheets(sheet_name)
 
     @classmethod
-    def get_user_spreadsheet(cls, user_qq: int) -> Spreadsheets:
-        user_sheet_name = cls.get_user_sheet_name(user_qq)
+    def get_user_plan_spreadsheet(cls, user_qq: int, plan_name) -> Spreadsheets:
+        user_sheet_name = cls.get_user_plan_sheet_name(user_qq, plan_name)
         return cls.client.get_spreadsheets(user_sheet_name)
 
     """ == 默认表配置 == """

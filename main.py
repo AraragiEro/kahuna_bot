@@ -138,9 +138,9 @@ class MyPlugin(Star):
         yield UserEvent.sign(event)
 
     @my.command("sheet")
-    async def my_sheet(self, event: AstrMessageEvent):
+    async def my_sheet(self, event: AstrMessageEvent, plan_name: str):
         """ 创建数据报表 """
-        yield UserEvent.sheet_url(event)
+        yield UserEvent.sheet_url(event, plan_name)
 
     @my.command("createsheet")
     async def my_createsheet(self, event: AstrMessageEvent):
@@ -217,7 +217,7 @@ class MyPlugin(Star):
     async def Inds_matcher_del(self, event: AstrMessageEvent, matcher_name: str):
         yield IndsEvent.matcher_del(event, matcher_name)
 
-    @Inds_matcher.command('总览', alias={"ls"})
+    @Inds_matcher.command('列表', alias={"ls"})
     async def Inds_matcher_ls(self, event: AstrMessageEvent):
         """ 获取当前用户所有匹配器 """
         yield IndsEvent.matcher_ls(event)
@@ -291,6 +291,14 @@ class MyPlugin(Star):
     @Inds_plan.command('顺序交换', alias={"changeindex"})
     async def Inds_plan_changeindex(self, event: AstrMessageEvent, plan_name: str, index: int, new_index: int):
         yield IndsEvent.plan_changeindex(event, plan_name, index, new_index)
+
+    @Inds_plan.command('屏蔽库存', alias={"hidecontainer"})
+    async def Inds_plan_hidecontainer(self, event: AstrMessageEvent, plan_name: str, container_id: int):
+        yield IndsEvent.plan_hidecontainer(event, plan_name, container_id)
+
+    @Inds_plan.command('取消屏蔽库存', alias={"unhidecontainer"})
+    async def Inds_plan_unhidecontainer(self, event: AstrMessageEvent, plan_name: str, container_id: int):
+        yield IndsEvent.plan_unhidecontainer(event, plan_name, container_id)
 
     @Inds.group('报表', alias={"rp"})
     async def Inds_rp(self, event: AstrMessageEvent):

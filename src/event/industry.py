@@ -409,6 +409,26 @@ class IndsEvent:
         return event.plain_result("执行完成")
 
     @staticmethod
+    def plan_hidecontainer(event: AstrMessageEvent, plan_name: str, container_id: int):
+        user_qq = int(event.get_sender_id())
+        user = UserManager.get_user(user_qq)
+        if plan_name not in user.user_data.plan:
+            raise KahunaException(f"plan {plan_name} not exist")
+
+        user.add_container_block(plan_name, container_id)
+        return event.plain_result("执行完成")
+
+    @staticmethod
+    def plan_unhidecontainer(event: AstrMessageEvent, plan_name: str, container_id: int):
+        user_qq = int(event.get_sender_id())
+        user = UserManager.get_user(user_qq)
+        if plan_name not in user.user_data.plan:
+            raise KahunaException(f"plan {plan_name} not exist")
+
+        user.del_container_block(plan_name, container_id)
+        return event.plain_result("执行完成")
+
+    @staticmethod
     async def rp_all(event: AstrMessageEvent, plan_name: str):
         user_qq = int(event.get_sender_id())
         user = UserManager.get_user(user_qq)
@@ -422,7 +442,7 @@ class IndsEvent:
                 await asyncio.sleep(1)
             report = future.result()
 
-        spreadsheet = FeiShuKahuna.create_user_spreadsheet(user_qq)
+        spreadsheet = FeiShuKahuna.create_user_plan_spreadsheet(user_qq, plan_name)
         FeiShuKahuna.create_default_spreadsheet(spreadsheet)
         work_tree_sheet = FeiShuKahuna.get_worktree_sheet(spreadsheet)
         FeiShuKahuna.output_work_tree(work_tree_sheet, report['work'])
@@ -456,7 +476,7 @@ class IndsEvent:
                 await asyncio.sleep(1)
             t2mk_data = future.result()
 
-        spreadsheet = FeiShuKahuna.create_user_spreadsheet(user_qq)
+        spreadsheet = FeiShuKahuna.create_user_plan_spreadsheet(user_qq, plan_name)
         t2_cost_sheet = FeiShuKahuna.get_t2_ship_market_sheet(spreadsheet)
         FeiShuKahuna.output_t2mk_sheet(t2_cost_sheet, t2mk_data)
 
@@ -485,7 +505,7 @@ class IndsEvent:
                 await asyncio.sleep(1)
             cost_data = future.result()
 
-        spreadsheet = FeiShuKahuna.create_user_spreadsheet(user_qq)
+        spreadsheet = FeiShuKahuna.create_user_plan_spreadsheet(user_qq, plan_name)
         cost_sheet = FeiShuKahuna.get_cap_cost_sheet(spreadsheet)
         FeiShuKahuna.output_cost_sheet(cost_sheet, cost_data)
 
@@ -502,7 +522,7 @@ class IndsEvent:
 
         detail_dict = IndustryAnalyser.get_cost_detail(user, plan_name, product)
 
-        spreadsheet = FeiShuKahuna.create_user_spreadsheet(user_qq)
+        spreadsheet = FeiShuKahuna.create_user_plan_spreadsheet(user_qq, plan_name)
         cost_sheet = FeiShuKahuna.get_detail_cost_sheet(spreadsheet)
         FeiShuKahuna.output_cost_detail_sheet(cost_sheet, detail_dict)
 
