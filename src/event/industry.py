@@ -266,7 +266,9 @@ class IndsEvent:
         structure_list = StructureManager.get_all_structure()
         print_list = []
         for structure in structure_list:
-            print_list.append(f"id: {structure.structure_id}\nType: {SdeUtils.get_name_by_id(structure.type_id)}\nName: {structure.name}\n"
+            print_list.append(f"id: {structure.structure_id}\n"
+                              f"Type: {SdeUtils.get_name_by_id(structure.type_id)}\n"
+                              f"Name: {structure.name}\n"
                               f"rig: {structure.mater_rig_level}-{structure.time_rig_level}\n")
         return event.plain_result("\n".join(print_list))
 

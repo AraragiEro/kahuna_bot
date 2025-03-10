@@ -89,6 +89,7 @@ def format_work_tree(datadict: dict):
     key = key[:-1]
     for k in key:
         data = datadict[k]
+        data.sort(key=lambda x: x[0])
         data = head + data
         output = output + data + [["" for _ in range(len(head[0]))]]
 

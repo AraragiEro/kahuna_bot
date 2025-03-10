@@ -242,12 +242,14 @@ class MyPlugin(Star):
     async def Inds_structure(self, event: AstrMessageEvent):
         pass
 
-    @Inds_structure.command('总览', alias={"ls"})
+    @Inds_structure.command('列表', alias={"ls"})
     async def Inds_structure_ls(self, event: AstrMessageEvent):
+        ''' 打印已保存的建筑信息 '''
         yield IndsEvent.structure_ls(event)
 
     @Inds_structure.command('信息', alias={"info"})
     async def Inds_structure_info(self, event: AstrMessageEvent, structure_id: int):
+        ''' 打印指定id的建筑信息 '''
         yield IndsEvent.structure_info(event, structure_id)
 
     @Inds_structure.command('设置', alias={"set"})
