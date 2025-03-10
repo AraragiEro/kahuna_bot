@@ -173,7 +173,11 @@ class MarketHistory:
                     await asyncio.sleep(0.05)
                     pbar.update()
                 for future in futures:
-                    future.result()
+                    try:
+                        future.result()
+                    except Exception as e:
+                        logger.error(f"refresh_type_history_in_region error: "
+                                     f"{type_id} {SdeUtils.get_name_by_id(type_id)} {e}")
 
     @classmethod
     def refresh_type_history_in_region(cls, type_id: int, region_id: int):

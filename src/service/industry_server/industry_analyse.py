@@ -257,7 +257,6 @@ class IndustryAnalyser():
         递归处理生成蓝图节点。
         每个节点代表一种材料，每种target需要的材料存储在节点与节点之间的边关系
         """
-        # TODO 跳过黑名单制品
         while bfs_queue:
             index, type_id, quantity = bfs_queue.pop(0)
             dg.add_node(type_id)
