@@ -340,9 +340,13 @@ class MyPlugin(Star):
     async def sde_type(self, event: AstrMessageEvent, message: str):
         yield SdeEvent.type(event)
 
-    @sde.command("findtype")
+    @sde.command("find")
     async def sde_findtype(self, event: AstrMessageEvent, message: str):
         yield SdeEvent.findtype(event)
+
+    @sde.command("id")
+    async def sde_id(self, event: AstrMessageEvent, tid: int):
+        yield SdeEvent.type_id(event, tid)
 
     @filter.command("test")
     async def test(self, event: AstrMessageEvent, require_str: str):

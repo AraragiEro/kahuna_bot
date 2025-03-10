@@ -570,6 +570,7 @@ class SdeEvent():
                 fuzz_rely += '\n'.join(fuzz_list)
                 return event.plain_result(fuzz_rely)
 
+    @staticmethod
     def findtype(event: AstrMessageEvent, ):
         message_str = event.get_message_str()
         type_name = " ".join(message_str.split(" ")[2:])
@@ -578,3 +579,18 @@ class SdeEvent():
             fuzz_rely = (f"你是否在寻找：\n")
             fuzz_rely += '\n'.join(fuzz_list)
             return event.plain_result(fuzz_rely)
+
+    @staticmethod
+    def type_id(event: AstrMessageEvent, type_id: int):
+        name = SdeUtils.get_name_by_id(type_id)
+        if name:
+            print_str = (f"enname: {SdeUtils.get_name_by_id(type_id)}\n"
+                         f"zhname: {SdeUtils.get_cn_name_by_id(type_id)}\n"
+                         f"type_id: {type_id}\n"
+                         f"group: {SdeUtils.get_groupname_by_id(type_id)}\n"
+                         f"category: {SdeUtils.get_category_by_id(type_id)}\n"
+                         f"meta: {SdeUtils.get_metaname_by_typeid(type_id)}\n"
+                         f"market_tree: \n{"\n  ↓\n".join(SdeUtils.get_market_group_list(type_id))}\n")
+            return event.plain_result(print_str)
+        else:
+            return event.plain_result('id不存在于数据库')
