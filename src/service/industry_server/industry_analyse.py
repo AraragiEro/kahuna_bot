@@ -299,6 +299,8 @@ class IndustryAnalyser():
         # 2. 蓝图统计
         # owner_qq可用的蓝图仓库，即container_tag为bp的仓库，需要存在于目标建筑
         bp_container_list = AssetContainer.get_location_id_by_qq_tag(user_qq, "bp")
+        manu_container_list = AssetContainer.get_location_id_by_qq_tag(user_qq, "manu")
+        bp_container_list += manu_container_list
         bp_container_list = [container for container in bp_container_list if SdeUtils.get_structure_id_from_location_id(container)[0] == structure_id]
 
         # 根据source_id获得user_qq所属的所有蓝图
