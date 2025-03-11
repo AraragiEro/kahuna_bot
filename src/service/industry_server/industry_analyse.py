@@ -57,7 +57,8 @@ class Work():
         self.location_id = location_id
         self.structure_id = structure_id
         self.void_bp = void_bp
-        self.avaliable = False
+        self.avaliable = True
+        self.support_index = set()
 
     def get_material_need(self):
         mater_dict = BPManager.get_bp_materials(self.type_id)
@@ -526,9 +527,11 @@ class IndustryAnalyser():
                         child_used_sum += \
                             math.ceil(father_work_list[work_i].runs * bp_need_quantity * \
                             (1 if bp_need_quantity == 1 else father_work_list[work_i].mater_eff))
+                        father_work_list[work_i].support_index.add(index)
                         # 设计上是刚好的，最后再加1会越界
                         if work_i < work_list_len - 1:
                             work_i += 1
+                    father_work_list[work_i].support_index.add(index)
                     # 如果有超出部分，计算部分蓝图的消耗
                     if father_production_sum > father_need:
                         if work_i >= work_list_len:
@@ -600,11 +603,14 @@ class IndustryAnalyser():
             for index, quantity in single_actually_index_need.items():
                 # 计算资产是否满足父节点需求
                 if quantity  == 0:
+                    # 已完成
                     status = 1
                 elif quantity <= avaliable_asset:
+                    # 满足
                     avaliable_asset -= quantity
                     status = 2
                 elif quantity:
+                    # 不满足
                     avaliable_asset = 0
                     status = 3
                 self.work_graph.add_edge(father_id, child_id, index=index, quantity=quantity, status=status)
@@ -624,11 +630,6 @@ class IndustryAnalyser():
             child_total_runs = math.ceil(child_total_quantity / child_product_quantity)
 
             child_actually_worklist = self.get_runs_list_by_bpasset(child_actually_total_runs, child_id, self.owner_qq, self.actually_need_work_list_dict)
-            # 计算工作是否有满足需求的原材料
-            for work in child_actually_worklist:
-                work.avaliable = IdsU.check_job_material_avaliable(child_id, work, self.job_asset_check_dict)
-                if not work.avaliable:
-                    break
             child_total_worklist = self.get_runs_list_by_bpasset(child_total_runs, child_id, self.owner_qq, self.total_need_work_list_dict)
         else:
             child_actually_worklist = []
@@ -668,6 +669,25 @@ class IndustryAnalyser():
 
         return self.work_graph.nodes[child_id], self.global_graph.nodes[child_id]
 
+    def update_work_avaliable(self):
+        asset_dict = self.job_asset_check_dict
+        work_check_dict = dict()
+        for node in self.work_graph.nodes():
+            if 'work_list' not in self.work_graph.nodes[node]:
+                continue
+            work_list = self.work_graph.nodes[node]['work_list']
+            for work in work_list:
+                IdsU.input_work_checkpoint(work_check_dict, work)
+
+        for needed_child, needed_data in work_check_dict.items():
+            needed_data.sort(key=lambda x: x['min_index'])
+            for needed in needed_data:
+                if needed['quantity'] > asset_dict.get(needed_child, 0):
+                    needed['work'].avaliable = False
+                else:
+                    asset_dict[needed_child] -= needed['quantity']
+
+
     """ 计算核心入口函数 """
     def analyse_progress_work_type(self, work_list: list[list[str, int]]) -> dict:
         if not self.bp_matcher or not self.st_matcher or not self.pd_block_matcher:
@@ -690,6 +710,9 @@ class IndustryAnalyser():
         cache_dict = dict()
         for node in nodes_without_outgoing_edges:
             res_dict[node] = self.calculate_work_bpnode_quantity(node, cache_dict)
+
+        ''' 更新工作流的材料是否满足 '''
+        self.update_work_avaliable()
 
         self.analysed_status = True
         return res_dict

@@ -1,5 +1,4 @@
 # import logger
-from astrbot.api import logger
 from peewee import DoesNotExist
 from concurrent.futures import ThreadPoolExecutor
 import asyncio
@@ -22,6 +21,7 @@ from ..service.industry_server.industry_manager import IndustryManager
 from ..service.industry_server.industry_advice import IndustryAdvice
 from ..service.sde_service.utils import SdeUtils
 from ..service.feishu_server.feishu_kahuna import FeiShuKahuna
+from ..service.log_server import logger
 
 # import Exception
 from ..utils import KahunaException
@@ -90,6 +90,7 @@ class AssetEvent():
         for container in AssetManager.container_dict.values():
             if (AssetContainer.operater_has_container_permission(user_qq, container.asset_owner_id) and
                 user_qq == container.asset_owner_qq):
+                logger.info(f'{user_qq} == container.asset_owner_qq')
                 print_str += f"{container}\n"
         return event.plain_result(print_str)
 
