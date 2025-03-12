@@ -1,19 +1,21 @@
 import json
 import os
 import asyncio
+from urllib.parse import uses_query
 
 from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
 from astrbot.api.star import Context, Star, register
 from astrbot.core.star.filter import HandlerFilter
 from astrbot.core.star.filter.custom_filter import CustomFilter
 from astrbot.core.star.filter.permission import PermissionType
-from astrbot.api import logger
+from astrbot.api import logger, llm_tool
 
 from .src.event.utils import kahuna_debug_info
 from .src.event.character import CharacterEvent
 from .src.event.price import TypesPriceEvent
 from .src.event.user import UserEvent
 from .src.event.industry import AssetEvent, MarketEvent, IndsEvent, SdeEvent
+from .src.event import llm_tool as kahuna_llmt
 from .filter import AdminFilter, VipMemberFilter, MemberFilter
 
 from .src.service.character_server.character_manager import CharacterManager
@@ -30,7 +32,7 @@ from .src.utils import refresh_per_min, run_func_delay_min
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 @register("KAHUNA_BOT", "Alero", "一个eveonline综合性插件", "0.0.1", "repo url")
-class MyPlugin(Star):
+class KahunaBot(Star):
     """
     The `MyPlugin` class.
 
@@ -350,6 +352,46 @@ class MyPlugin(Star):
     async def sde_id(self, event: AstrMessageEvent, tid: int):
         yield SdeEvent.type_id(event, tid)
 
-    @filter.command("test")
-    async def test(self, event: AstrMessageEvent, require_str: str):
-        yield TypesPriceEvent.test_func(event, require_str)
+    # @filter.command("test")
+    # async def test(self, event: AstrMessageEvent, require_str: str):
+    #     yield TypesPriceEvent.test_func(event, require_str)
+
+    """ 自然语言指令集 """
+    @llm_tool(name='eve_knowlage_bot')
+    async def eve_knowlage_bot(self, event: AstrMessageEvent, question_str: str) -> MessageEventResult:
+        ''' 向eveonline和FRT兄弟会wiki知识库机器人提问获得eveonline或FRT联盟wiki相关内容。
+
+        Args:
+            question_str(string): 用于向evewiki聊天机器人提问的文本。
+        '''
+        yield await kahuna_llmt.return_evebot_result(self, event, question_str)
+
+    @llm_tool(name="get_eve_industry_report")  # 如果 name 不填，将使用函数名
+    async def get_eve_industry_report(self, event: AstrMessageEvent, plan_name: str) -> MessageEventResult:
+        ''' 获取eveonline游戏的工业计划报表。
+
+        Args:
+            plan_name(string): 计划名称
+        '''
+        tool_result = await IndsEvent.rp_all(event, plan_name)
+        yield await kahuna_llmt.return_tool_result_with_llm(self, event, tool_result)
+
+    @llm_tool(name="get_eve_capital_cost_with_plan_data")  # 如果 name 不填，将使用函数名
+    async def get_eve_capital_cost_with_plan_data(self, event: AstrMessageEvent, plan_name: str) -> MessageEventResult:
+        ''' 根据给定的计划中的数据计算eveonline游戏中旗舰种类舰船的成本。
+
+        Args:
+            plan_name(string): 计划名称
+        '''
+        tool_result = await IndsEvent.rp_capcost(event, plan_name)
+        yield await kahuna_llmt.return_tool_result_with_llm(self, event, tool_result)
+
+    @llm_tool(name="get_eve_t2_cost_with_plan_data")  # 如果 name 不填，将使用函数名
+    async def get_eve_t2_cost_with_plan_data(self, event: AstrMessageEvent, plan_name: str) -> MessageEventResult:
+        ''' 根据给定的计划中的数据计算eveonline游戏中T2科技等级种类舰船的成本、利润、流水等市场信息。
+
+        Args:
+            plan_name(string): 计划名称
+        '''
+        tool_result = await IndsEvent.rp_t2mk(event, plan_name)
+        yield await kahuna_llmt.return_tool_result_with_llm(self, event, tool_result)
