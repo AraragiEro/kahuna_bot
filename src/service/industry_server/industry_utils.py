@@ -37,6 +37,18 @@ class IdsUtils:
         return True
 
     @classmethod
+    def input_work_checkpoint(cls, work_check_dict, work):
+        type_id = work.type_id
+        bp_materials = BPManager.get_bp_materials(type_id)
+        for child_id, quantity in bp_materials.items():
+            child_need = math.ceil(quantity * work.runs * work.mater_eff)
+            if child_id not in work_check_dict:
+                work_check_dict[child_id] = []
+            work_check_dict[child_id].append({
+                'min_index': min(work.support_index), 'quantity': child_need, 'work': work
+            })
+
+    @classmethod
     def get_eiv_cost(cls, child_id, child_total_quantity: int, owner_qq: int, st_matcher):
         """ 获取系数成本 """
         character_id = UserManager.get_main_character_id(owner_qq)

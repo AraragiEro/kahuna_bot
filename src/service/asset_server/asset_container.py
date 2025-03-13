@@ -12,6 +12,7 @@ class ContainerTag(Enum):
     bp = 'blueprint'
     reac = 'reaction'
     manu = 'manufacturing'
+    sell = 'sell'
 
 class AssetContainer:
     asset_location_id = 0
@@ -140,6 +141,5 @@ class AssetContainer:
     def __str__(self):
         return (f"id: {self.asset_location_id}\n"
                 f"name: {self.asset_name}\n"
-                f"所属用户: {self.asset_owner_qq}\n")
-
-
+                f"所属用户: {self.asset_owner_qq}\n"
+                f"tag: {self.tag}\n")

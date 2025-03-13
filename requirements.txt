@@ -8,3 +8,5 @@ notion~=0.0.28
 thefuzz~=0.22.1
 psycopg2~=2.9.10
 lark-oapi~=1.4.9
+Jinja2~=3.1.5
+imgkit~=1.2.3

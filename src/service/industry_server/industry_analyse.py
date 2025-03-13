@@ -57,7 +57,8 @@ class Work():
         self.location_id = location_id
         self.structure_id = structure_id
         self.void_bp = void_bp
-        self.avaliable = False
+        self.avaliable = True
+        self.support_index = set()
 
     def get_material_need(self):
         mater_dict = BPManager.get_bp_materials(self.type_id)
@@ -86,6 +87,7 @@ class IndustryAnalyser():
         self.total_need_work_list_dict = dict()
         self.running_job = dict()  # { type_id: runs }
         self.target_container = set()
+        self.hide_container = set()
         self.asset_dict = dict()
 
         self.bp_runs_dict = dict()
@@ -180,7 +182,9 @@ class IndustryAnalyser():
 
     def get_target_container(self):
         container_list = AssetManager.get_user_container(self.owner_qq)
-        self.target_container = set(container.asset_location_id for container in container_list if container.tag in {"manu", "reac"})
+        self.target_container = set(container.asset_location_id for container in container_list
+                                    if (container.tag in {"manu", "reac"} and
+                                        container.asset_location_id not in self.hide_container))
 
     def get_asset_in_container(self):
         if not self.target_container:
@@ -212,6 +216,7 @@ class IndustryAnalyser():
         self.bfs_bp_tree(bfs_queue, dg)
         memo = dict()
         root_depth = self.longest_path_dag('root', memo)
+        self.update_layer_depth('root')
         return dg
 
     # 递归计算最长路径，并添加备忘录优化
@@ -238,12 +243,21 @@ class IndustryAnalyser():
         self.bp_graph.nodes[node]['depth'] = memo[node]
         return memo[node]
 
+    def update_layer_depth(self, node):
+        if node != 'root' and self.bp_graph.nodes[node]['depth'] != 1:
+            max_depth = 0
+            for pre in self.bp_graph.predecessors(node):
+                max_depth = max(max_depth, self.bp_graph.nodes[pre]['depth'])
+            self.bp_graph.nodes[node]['depth'] = max_depth - 1
+
+        for suss in self.bp_graph.successors(node):
+            self.update_layer_depth(suss)
+
     def bfs_bp_tree(self, bfs_queue: list, dg: nx.DiGraph = None):
         """
         递归处理生成蓝图节点。
         每个节点代表一种材料，每种target需要的材料存储在节点与节点之间的边关系
         """
-        # TODO 跳过黑名单制品
         while bfs_queue:
             index, type_id, quantity = bfs_queue.pop(0)
             dg.add_node(type_id)
@@ -286,6 +300,8 @@ class IndustryAnalyser():
         # 2. 蓝图统计
         # owner_qq可用的蓝图仓库，即container_tag为bp的仓库，需要存在于目标建筑
         bp_container_list = AssetContainer.get_location_id_by_qq_tag(user_qq, "bp")
+        manu_container_list = AssetContainer.get_location_id_by_qq_tag(user_qq, "manu")
+        bp_container_list += manu_container_list
         bp_container_list = [container for container in bp_container_list if SdeUtils.get_structure_id_from_location_id(container)[0] == structure_id]
 
         # 根据source_id获得user_qq所属的所有蓝图
@@ -511,9 +527,11 @@ class IndustryAnalyser():
                         child_used_sum += \
                             math.ceil(father_work_list[work_i].runs * bp_need_quantity * \
                             (1 if bp_need_quantity == 1 else father_work_list[work_i].mater_eff))
+                        father_work_list[work_i].support_index.add(index)
                         # 设计上是刚好的，最后再加1会越界
                         if work_i < work_list_len - 1:
                             work_i += 1
+                    father_work_list[work_i].support_index.add(index)
                     # 如果有超出部分，计算部分蓝图的消耗
                     if father_production_sum > father_need:
                         if work_i >= work_list_len:
@@ -585,11 +603,14 @@ class IndustryAnalyser():
             for index, quantity in single_actually_index_need.items():
                 # 计算资产是否满足父节点需求
                 if quantity  == 0:
+                    # 已完成
                     status = 1
                 elif quantity <= avaliable_asset:
+                    # 满足
                     avaliable_asset -= quantity
                     status = 2
                 elif quantity:
+                    # 不满足
                     avaliable_asset = 0
                     status = 3
                 self.work_graph.add_edge(father_id, child_id, index=index, quantity=quantity, status=status)
@@ -609,11 +630,6 @@ class IndustryAnalyser():
             child_total_runs = math.ceil(child_total_quantity / child_product_quantity)
 
             child_actually_worklist = self.get_runs_list_by_bpasset(child_actually_total_runs, child_id, self.owner_qq, self.actually_need_work_list_dict)
-            # 计算工作是否有满足需求的原材料
-            for work in child_actually_worklist:
-                work.avaliable = IdsU.check_job_material_avaliable(child_id, work, self.job_asset_check_dict)
-                if not work.avaliable:
-                    break
             child_total_worklist = self.get_runs_list_by_bpasset(child_total_runs, child_id, self.owner_qq, self.total_need_work_list_dict)
         else:
             child_actually_worklist = []
@@ -653,6 +669,25 @@ class IndustryAnalyser():
 
         return self.work_graph.nodes[child_id], self.global_graph.nodes[child_id]
 
+    def update_work_avaliable(self):
+        asset_dict = self.job_asset_check_dict
+        work_check_dict = dict()
+        for node in self.work_graph.nodes():
+            if 'work_list' not in self.work_graph.nodes[node]:
+                continue
+            work_list = self.work_graph.nodes[node]['work_list']
+            for work in work_list:
+                IdsU.input_work_checkpoint(work_check_dict, work)
+
+        for needed_child, needed_data in work_check_dict.items():
+            needed_data.sort(key=lambda x: x['min_index'])
+            for needed in needed_data:
+                if needed['quantity'] > asset_dict.get(needed_child, 0):
+                    needed['work'].avaliable = False
+                else:
+                    asset_dict[needed_child] -= needed['quantity']
+
+
     """ 计算核心入口函数 """
     def analyse_progress_work_type(self, work_list: list[list[str, int]]) -> dict:
         if not self.bp_matcher or not self.st_matcher or not self.pd_block_matcher:
@@ -675,6 +710,9 @@ class IndustryAnalyser():
         cache_dict = dict()
         for node in nodes_without_outgoing_edges:
             res_dict[node] = self.calculate_work_bpnode_quantity(node, cache_dict)
+
+        ''' 更新工作流的材料是否满足 '''
+        self.update_work_avaliable()
 
         self.analysed_status = True
         return res_dict
@@ -714,6 +752,7 @@ class IndustryAnalyser():
         analyser.set_plan_list(plan_dict["plan"])
         analyser.manu_cycle_time = plan_dict['manucycletime']
         analyser.reac_cycle_time = plan_dict["reaccycletime"]
+        analyser.hide_container = set(plan_dict["container_block"])
         # analyser.manu_lines = plan_dict["manulinenum"]
         # analyser.reac_lines = plan_dict["reaclinenum"]
 
@@ -721,11 +760,7 @@ class IndustryAnalyser():
 
     @classmethod
     def get_analyser_by_plan(cls, user, plan_name):
-        if (user.user_qq, plan_name) not in cls.analyser_cache:
-            analyser = cls.create_analyser_by_plan(user, plan_name)
-            cls.analyser_cache[(user.user_qq, plan_name)] = analyser
-            return analyser
-        return cls.analyser_cache[(user.user_qq, plan_name)]
+        return cls.create_analyser_by_plan(user, plan_name)
 
     def get_work_tree_data(self):
         self.clean_analyser()
@@ -739,7 +774,8 @@ class IndustryAnalyser():
                         "燃料块": [],
                         "元素": [],
                         "气云": [],
-                        "杂货": []},
+                        "杂货": [],
+                        "反应物": []},
             'work_flow': dict(),
             'logistic': dict()
         }
@@ -962,6 +998,7 @@ class IndustryAnalyser():
         # 获取 Group 和 Category 信息
         group = SdeUtils.get_groupname_by_id(type_id)
         category = SdeUtils.get_category_by_id(type_id)
+        mk_list = SdeUtils.get_market_group_list(type_id)
         work_node = self.work_graph.nodes[type_id]
         global_node = self.global_graph.nodes[type_id]
         market = MarketManager.get_market_by_type('jita')
@@ -998,6 +1035,8 @@ class IndustryAnalyser():
             result_dict["气云"].append(data)
         elif category == "Planetary Commodities":
             result_dict["行星工业"].append(data)
+        elif 'Reaction Materials' in mk_list:
+            result_dict['反应物'].append(data)
         else:
             result_dict["杂货"].append(data)
 

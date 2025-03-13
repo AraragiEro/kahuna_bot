@@ -3,7 +3,7 @@ import requests
 from cachetools import TTLCache, cached
 
 # kahuna logger
-from src.service.log_server import logger
+from ...log_server import logger
 
 def post_request(url, **kwargs):
     response = requests.post(url, **kwargs)

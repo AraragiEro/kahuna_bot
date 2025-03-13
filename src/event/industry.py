@@ -1,5 +1,4 @@
 # import logger
-from astrbot.api import logger
 from peewee import DoesNotExist
 from concurrent.futures import ThreadPoolExecutor
 import asyncio
@@ -22,6 +21,7 @@ from ..service.industry_server.industry_manager import IndustryManager
 from ..service.industry_server.industry_advice import IndustryAdvice
 from ..service.sde_service.utils import SdeUtils
 from ..service.feishu_server.feishu_kahuna import FeiShuKahuna
+from ..service.log_server import logger
 
 # import Exception
 from ..utils import KahunaException
@@ -88,7 +88,9 @@ class AssetEvent():
         user_qq = int(event.get_sender_id())
         print_str = "你可访问以下库存：\n"
         for container in AssetManager.container_dict.values():
-            if AssetContainer.operater_has_container_permission(user_qq, container.asset_owner_id):
+            if (AssetContainer.operater_has_container_permission(user_qq, container.asset_owner_id) and
+                user_qq == container.asset_owner_qq):
+                logger.info(f'{user_qq} == container.asset_owner_qq')
                 print_str += f"{container}\n"
         return event.plain_result(print_str)
 
@@ -266,7 +268,9 @@ class IndsEvent:
         structure_list = StructureManager.get_all_structure()
         print_list = []
         for structure in structure_list:
-            print_list.append(f"id: {structure.structure_id}\nType: {SdeUtils.get_name_by_id(structure.type_id)}\nName: {structure.name}\n"
+            print_list.append(f"id: {structure.structure_id}\n"
+                              f"Type: {SdeUtils.get_name_by_id(structure.type_id)}\n"
+                              f"Name: {structure.name}\n"
                               f"rig: {structure.mater_rig_level}-{structure.time_rig_level}\n")
         return event.plain_result("\n".join(print_list))
 
@@ -409,16 +413,40 @@ class IndsEvent:
         return event.plain_result("执行完成")
 
     @staticmethod
-    def rp_all(event: AstrMessageEvent, plan_name: str):
+    def plan_hidecontainer(event: AstrMessageEvent, plan_name: str, container_id: int):
         user_qq = int(event.get_sender_id())
         user = UserManager.get_user(user_qq)
         if plan_name not in user.user_data.plan:
             raise KahunaException(f"plan {plan_name} not exist")
 
-        analyser = IndustryAnalyser.get_analyser_by_plan(user, plan_name)
-        report = analyser.get_work_tree_data()
+        user.add_container_block(plan_name, container_id)
+        return event.plain_result("执行完成")
 
-        spreadsheet = FeiShuKahuna.create_user_spreadsheet(user_qq)
+    @staticmethod
+    def plan_unhidecontainer(event: AstrMessageEvent, plan_name: str, container_id: int):
+        user_qq = int(event.get_sender_id())
+        user = UserManager.get_user(user_qq)
+        if plan_name not in user.user_data.plan:
+            raise KahunaException(f"plan {plan_name} not exist")
+
+        user.del_container_block(plan_name, container_id)
+        return event.plain_result("执行完成")
+
+    @staticmethod
+    async def rp_all(event: AstrMessageEvent, plan_name: str):
+        user_qq = int(event.get_sender_id())
+        user = UserManager.get_user(user_qq)
+        if plan_name not in user.user_data.plan:
+            raise KahunaException(f"plan {plan_name} not exist")
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            analyser = IndustryAnalyser.get_analyser_by_plan(user, plan_name)
+            future = executor.submit(analyser.get_work_tree_data)
+            while not future.done():
+                await asyncio.sleep(1)
+            report = future.result()
+
+        spreadsheet = FeiShuKahuna.create_user_plan_spreadsheet(user_qq, plan_name)
         FeiShuKahuna.create_default_spreadsheet(spreadsheet)
         work_tree_sheet = FeiShuKahuna.get_worktree_sheet(spreadsheet)
         FeiShuKahuna.output_work_tree(work_tree_sheet, report['work'])
@@ -452,7 +480,7 @@ class IndsEvent:
                 await asyncio.sleep(1)
             t2mk_data = future.result()
 
-        spreadsheet = FeiShuKahuna.create_user_spreadsheet(user_qq)
+        spreadsheet = FeiShuKahuna.create_user_plan_spreadsheet(user_qq, plan_name)
         t2_cost_sheet = FeiShuKahuna.get_t2_ship_market_sheet(spreadsheet)
         FeiShuKahuna.output_t2mk_sheet(t2_cost_sheet, t2mk_data)
 
@@ -481,7 +509,7 @@ class IndsEvent:
                 await asyncio.sleep(1)
             cost_data = future.result()
 
-        spreadsheet = FeiShuKahuna.create_user_spreadsheet(user_qq)
+        spreadsheet = FeiShuKahuna.create_user_plan_spreadsheet(user_qq, plan_name)
         cost_sheet = FeiShuKahuna.get_cap_cost_sheet(spreadsheet)
         FeiShuKahuna.output_cost_sheet(cost_sheet, cost_data)
 
@@ -498,7 +526,7 @@ class IndsEvent:
 
         detail_dict = IndustryAnalyser.get_cost_detail(user, plan_name, product)
 
-        spreadsheet = FeiShuKahuna.create_user_spreadsheet(user_qq)
+        spreadsheet = FeiShuKahuna.create_user_plan_spreadsheet(user_qq, plan_name)
         cost_sheet = FeiShuKahuna.get_detail_cost_sheet(spreadsheet)
         FeiShuKahuna.output_cost_detail_sheet(cost_sheet, detail_dict)
 
@@ -546,6 +574,7 @@ class SdeEvent():
                 fuzz_rely += '\n'.join(fuzz_list)
                 return event.plain_result(fuzz_rely)
 
+    @staticmethod
     def findtype(event: AstrMessageEvent, ):
         message_str = event.get_message_str()
         type_name = " ".join(message_str.split(" ")[2:])
@@ -554,3 +583,18 @@ class SdeEvent():
             fuzz_rely = (f"你是否在寻找：\n")
             fuzz_rely += '\n'.join(fuzz_list)
             return event.plain_result(fuzz_rely)
+
+    @staticmethod
+    def type_id(event: AstrMessageEvent, type_id: int):
+        name = SdeUtils.get_name_by_id(type_id)
+        if name:
+            print_str = (f"enname: {SdeUtils.get_name_by_id(type_id)}\n"
+                         f"zhname: {SdeUtils.get_cn_name_by_id(type_id)}\n"
+                         f"type_id: {type_id}\n"
+                         f"group: {SdeUtils.get_groupname_by_id(type_id)}\n"
+                         f"category: {SdeUtils.get_category_by_id(type_id)}\n"
+                         f"meta: {SdeUtils.get_metaname_by_typeid(type_id)}\n"
+                         f"market_tree: \n{"\n  ↓\n".join(SdeUtils.get_market_group_list(type_id))}\n")
+            return event.plain_result(print_str)
+        else:
+            return event.plain_result('id不存在于数据库')

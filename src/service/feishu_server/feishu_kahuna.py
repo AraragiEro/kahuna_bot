@@ -21,17 +21,17 @@ class FeiShuKahuna:
         cls.client.set_folder_token(folder_token)
 
     @classmethod
-    def get_user_sheet_name(self, user_qq: str):
-        return f"kahunaBot_{user_qq}_data"
+    def get_user_plan_sheet_name(self, user_qq: int, plan_name):
+        return f"kahunaBot_{user_qq}_{plan_name}_data"
 
     @classmethod
-    def create_user_spreadsheet(cls, user_qq: int) -> Spreadsheets:
-        user_sheet_name = cls.get_user_sheet_name(user_qq)
-        return cls.client.create_spreadsheets(user_sheet_name)
+    def create_user_plan_spreadsheet(cls, user_qq: int, plan_name: str) -> Spreadsheets:
+        sheet_name = cls.get_user_plan_sheet_name(user_qq, plan_name)
+        return cls.client.create_spreadsheets(sheet_name)
 
     @classmethod
-    def get_user_spreadsheet(cls, user_qq: int) -> Spreadsheets:
-        user_sheet_name = cls.get_user_sheet_name(user_qq)
+    def get_user_plan_spreadsheet(cls, user_qq: int, plan_name) -> Spreadsheets:
+        user_sheet_name = cls.get_user_plan_sheet_name(user_qq, plan_name)
         return cls.client.get_spreadsheets(user_sheet_name)
 
     """ == 默认表配置 == """
@@ -134,9 +134,10 @@ class FeiShuKahuna:
 
         transport_data = logistic_dict['transport']
 
-        transport_list_head = ['提供', '需求', '物品', '数量']
-        transport_list = [[key[0], key[1], SdeUtils.get_name_by_id(key[2]), value]
-                                                  for key, value in transport_data.items()]
+        transport_list_head = ['提供', '需求', '物品', '数量', '体积']
+        transport_list = [[key[0], key[1], SdeUtils.get_name_by_id(key[2]), value,
+                           SdeUtils.get_invtype_packagedvolume_by_id(key[2]) * value]
+                          for key, value in transport_data.items()]
         transport_list.sort(key=lambda x: x[0], reverse=True)
         transport_list = [transport_list_head] + transport_list
         sheet.set_value([1, 1], transport_list)
@@ -171,6 +172,10 @@ class FeiShuKahuna:
         data = [['id', 'name', 'cn_name', '利润', '利润率', '月利润空间', '成本', '4h出单', '吉他收单', '吉他出单',
                  '月流水', '月销量']] + data
         sheet.set_value([1, 1], data)
+
+        sheet.set_format([4,1], [1, len(data)], {'formatter': '#,##0.00'})
+        sheet.set_format([5, 1], [1, len(data)], {'formatter': '0.00%'})
+        sheet.set_format([6, 1], [7, len(data)], {'formatter': '#,##0.00'})
 
     @classmethod
     def output_cost_detail_sheet(cls, sheet: Sheet, detail_dict: dict):

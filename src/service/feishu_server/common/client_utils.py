@@ -118,10 +118,10 @@ def format_material_tree(datadict: dict):
 
     # Prepare data list
     output = []
-    output_list = ['矿石', '燃料块', '元素', '气云', '行星工业', '杂货']
+    output_list = ['矿石', '燃料块', '元素', '气云', '行星工业', '杂货', '反应物']
 
     for key in output_list:
-        output += [header] + datadict[key] + [["" for _ in range(len(header))]]
+        output += [[key] + ['' for i in range(len(header) - 1)]] + [header] + datadict[key] + [["" for _ in range(len(header))]]
 
 
     return output

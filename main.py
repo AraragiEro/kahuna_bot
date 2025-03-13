@@ -1,19 +1,21 @@
 import json
 import os
 import asyncio
+from urllib.parse import uses_query
 
 from astrbot.api.event import filter, AstrMessageEvent, MessageEventResult
 from astrbot.api.star import Context, Star, register
 from astrbot.core.star.filter import HandlerFilter
 from astrbot.core.star.filter.custom_filter import CustomFilter
 from astrbot.core.star.filter.permission import PermissionType
-from astrbot.api import logger
+from astrbot.api import logger, llm_tool
 
 from .src.event.utils import kahuna_debug_info
 from .src.event.character import CharacterEvent
 from .src.event.price import TypesPriceEvent
 from .src.event.user import UserEvent
 from .src.event.industry import AssetEvent, MarketEvent, IndsEvent, SdeEvent
+from .src.event import llm_tool as kahuna_llmt
 from .filter import AdminFilter, VipMemberFilter, MemberFilter
 
 from .src.service.character_server.character_manager import CharacterManager
@@ -24,17 +26,34 @@ from .src.service.industry_server.structure import StructureManager
 from .src.service.industry_server.industry_manager import IndustryManager
 from .src.service.industry_server.industry_config import IndustryConfigManager
 
-from .src.utils import refresh_per_min
+from .src.utils import refresh_per_min, run_func_delay_min
 
 # 环境变量
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 
 @register("KAHUNA_BOT", "Alero", "一个eveonline综合性插件", "0.0.1", "repo url")
-class MyPlugin(Star):
+class KahunaBot(Star):
+    """
+    The `MyPlugin` class.
+
+    This is a plugin class for an EVE Online integrated application. It registers various command groups
+    and commands to handle user interactions involving EVE Online in-game features such as market
+    operations, character management, industry configurations, and more. This class leverages
+    asynchronous tasks to initiate various periodic refresh jobs related to market, asset management,
+    and industrial system data.
+
+    Attributes
+    ----------
+    context : Context
+        An instance of the `Context` class, used to provide the operational context for the plugin.
+    """
     def __init__(self, context: Context):
         super().__init__(context)
         # 初始化
         # asyncio.create_task(self.init_plugin())
+
+        # 延时初始化
+        asyncio.create_task(run_func_delay_min(0, CharacterManager.refresh_all_characters_at_init))
 
         # 定时刷新任务
         asyncio.create_task(refresh_per_min(0, 360, MarketManager.refresh_market))
@@ -42,15 +61,6 @@ class MyPlugin(Star):
         asyncio.create_task(refresh_per_min(0, 10, IndustryManager.refresh_running_status))
         asyncio.create_task(refresh_per_min(0, 60, IndustryManager.refresh_system_cost))
         asyncio.create_task(refresh_per_min(0, 60, IndustryManager.refresh_market_price))
-
-    # async def init_plugin(self):
-        # await CharacterManager.init_character_dict()
-        # await UserManager.init_user_dict()
-        # await AssetManager.init_asset_dict()
-        # await AssetManager.init_container_dict()
-        # await MarketManager.init_market()
-        # await StructureManager.init_structure_dict()
-        # await IndustryConfigManager.init_matcher_dict()
 
     # 注册指令的装饰器。指令名为 helloworld。注册成功后，发送 `/helloworld` 就会触发这个指令，并回复 `你好, {user_name}!`
     # @filter.custom_filter(SelfFilter1)
@@ -111,7 +121,7 @@ class MyPlugin(Star):
     async def user_clearvip(self, event: AstrMessageEvent, user_qq: int):
         yield UserEvent.clearMemberTime(event, user_qq)
 
-    @filter.command_group("my")
+    @filter.command_group("我的", alias={"my"})
     async def my(self, event: AstrMessageEvent):
         pass
 
@@ -130,9 +140,9 @@ class MyPlugin(Star):
         yield UserEvent.sign(event)
 
     @my.command("sheet")
-    async def my_sheet(self, event: AstrMessageEvent):
+    async def my_sheet(self, event: AstrMessageEvent, plan_name: str):
         """ 创建数据报表 """
-        yield UserEvent.sheet_url(event)
+        yield UserEvent.sheet_url(event, plan_name)
 
     @my.command("createsheet")
     async def my_createsheet(self, event: AstrMessageEvent):
@@ -176,7 +186,7 @@ class MyPlugin(Star):
     async def asset_container_find(self, event: AstrMessageEvent, secret_type: str):
         yield AssetEvent.container_find(event, secret_type)
 
-    @asset_container.command('标签', alias={"settag"})
+    @asset_container.command('设置标签', alias={"settag"})
     async def asset_container_settag(self, event: AstrMessageEvent, location_id_list: str, tag: str):
         yield AssetEvent.container_settag(event, location_id_list, tag)
 
@@ -209,7 +219,7 @@ class MyPlugin(Star):
     async def Inds_matcher_del(self, event: AstrMessageEvent, matcher_name: str):
         yield IndsEvent.matcher_del(event, matcher_name)
 
-    @Inds_matcher.command('总览', alias={"ls"})
+    @Inds_matcher.command('列表', alias={"ls"})
     async def Inds_matcher_ls(self, event: AstrMessageEvent):
         """ 获取当前用户所有匹配器 """
         yield IndsEvent.matcher_ls(event)
@@ -234,12 +244,14 @@ class MyPlugin(Star):
     async def Inds_structure(self, event: AstrMessageEvent):
         pass
 
-    @Inds_structure.command('总览', alias={"ls"})
+    @Inds_structure.command('列表', alias={"ls"})
     async def Inds_structure_ls(self, event: AstrMessageEvent):
+        ''' 打印已保存的建筑信息 '''
         yield IndsEvent.structure_ls(event)
 
     @Inds_structure.command('信息', alias={"info"})
     async def Inds_structure_info(self, event: AstrMessageEvent, structure_id: int):
+        ''' 打印指定id的建筑信息 '''
         yield IndsEvent.structure_info(event, structure_id)
 
     @Inds_structure.command('设置', alias={"set"})
@@ -250,7 +262,7 @@ class MyPlugin(Star):
     async def Inds_plan(self, event: AstrMessageEvent):
         pass
 
-    @Inds_plan.command('创建', "create")
+    @Inds_plan.command('创建计划', "create")
     async def Inds_plan_create(self, event: AstrMessageEvent, plan_name: str,
                                bp_matcher: str, st_matcher: str, prod_block_matcher: str
                                ):
@@ -272,7 +284,7 @@ class MyPlugin(Star):
     async def Inds_plan_setprod(self, event: AstrMessageEvent, plan_name: str):
         yield IndsEvent.plan_setprod(event, plan_name)
 
-    @Inds_plan.command('删除产物', alias={"delprod"})
+    @Inds_plan.command('删除产品', alias={"delprod"})
     async def Inds_plan_delprod(self, event: AstrMessageEvent, plan_name: str, index: str):
         yield IndsEvent.plan_delprod(event, plan_name, index)
 
@@ -284,6 +296,14 @@ class MyPlugin(Star):
     async def Inds_plan_changeindex(self, event: AstrMessageEvent, plan_name: str, index: int, new_index: int):
         yield IndsEvent.plan_changeindex(event, plan_name, index, new_index)
 
+    @Inds_plan.command('屏蔽库存', alias={"hidecontainer"})
+    async def Inds_plan_hidecontainer(self, event: AstrMessageEvent, plan_name: str, container_id: int):
+        yield IndsEvent.plan_hidecontainer(event, plan_name, container_id)
+
+    @Inds_plan.command('取消屏蔽库存', alias={"unhidecontainer"})
+    async def Inds_plan_unhidecontainer(self, event: AstrMessageEvent, plan_name: str, container_id: int):
+        yield IndsEvent.plan_unhidecontainer(event, plan_name, container_id)
+
     @Inds.group('报表', alias={"rp"})
     async def Inds_rp(self, event: AstrMessageEvent):
         pass
@@ -291,7 +311,7 @@ class MyPlugin(Star):
     @Inds_rp.command('计划报表', alias={'workrp'})
     async def Inds_rp_workrp(self, event: AstrMessageEvent, plan_name: str):
         """ 计划材料清单 """
-        yield IndsEvent.rp_all(event, plan_name)
+        yield await IndsEvent.rp_all(event, plan_name)
 
     @Inds_rp.command('t2市场', alias={'t2mk'})
     async def Inds_rp_t2cost(self, event: AstrMessageEvent, plan_name: str):
@@ -324,11 +344,54 @@ class MyPlugin(Star):
     async def sde_type(self, event: AstrMessageEvent, message: str):
         yield SdeEvent.type(event)
 
-    @sde.command("findtype")
+    @sde.command("find")
     async def sde_findtype(self, event: AstrMessageEvent, message: str):
         yield SdeEvent.findtype(event)
 
+    @sde.command("id")
+    async def sde_id(self, event: AstrMessageEvent, tid: int):
+        yield SdeEvent.type_id(event, tid)
+
     # @filter.command("test")
-    # async def test(self, event: AstrMessageEvent):
-    #     from .src.service.industry_server.industry_analyse import BpAnalyser
-    #     BpAnalyser.get_product_work_materials()
+    # async def test(self, event: AstrMessageEvent, require_str: str):
+    #     yield TypesPriceEvent.test_func(event, require_str)
+
+    """ 自然语言指令集 """
+    @llm_tool(name='eve_knowlage_bot')
+    async def eve_knowlage_bot(self, event: AstrMessageEvent, question_str: str) -> MessageEventResult:
+        ''' 向eveonline和FRT兄弟会wiki知识库机器人提问获得eveonline或FRT联盟wiki相关内容。
+
+        Args:
+            question_str(string): 用于向evewiki聊天机器人提问的文本。
+        '''
+        yield await kahuna_llmt.return_evebot_result(self, event, question_str)
+
+    @llm_tool(name="get_eve_industry_report")  # 如果 name 不填，将使用函数名
+    async def get_eve_industry_report(self, event: AstrMessageEvent, plan_name: str) -> MessageEventResult:
+        ''' 获取eveonline游戏的工业计划报表。
+
+        Args:
+            plan_name(string): 计划名称
+        '''
+        tool_result = await IndsEvent.rp_all(event, plan_name)
+        yield await kahuna_llmt.return_tool_result_with_llm(self, event, tool_result)
+
+    @llm_tool(name="get_eve_capital_cost_with_plan_data")  # 如果 name 不填，将使用函数名
+    async def get_eve_capital_cost_with_plan_data(self, event: AstrMessageEvent, plan_name: str) -> MessageEventResult:
+        ''' 根据给定的计划中的数据计算eveonline游戏中旗舰种类舰船的成本。
+
+        Args:
+            plan_name(string): 计划名称
+        '''
+        tool_result = await IndsEvent.rp_capcost(event, plan_name)
+        yield await kahuna_llmt.return_tool_result_with_llm(self, event, tool_result)
+
+    @llm_tool(name="get_eve_t2_cost_with_plan_data")  # 如果 name 不填，将使用函数名
+    async def get_eve_t2_cost_with_plan_data(self, event: AstrMessageEvent, plan_name: str) -> MessageEventResult:
+        ''' 根据给定的计划中的数据计算eveonline游戏中T2科技等级种类舰船的成本、利润、流水等市场信息。
+
+        Args:
+            plan_name(string): 计划名称
+        '''
+        tool_result = await IndsEvent.rp_t2mk(event, plan_name)
+        yield await kahuna_llmt.return_tool_result_with_llm(self, event, tool_result)

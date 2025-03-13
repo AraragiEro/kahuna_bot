@@ -14,6 +14,7 @@ class Matcher:
         self.matcher_name = matcher_name
         self.user_qq = user_qq
         self.matcher_type = matcher_type
+        self.matcher_data = {matcher_k: dict() for matcher_k in MATCHER_KEY}
 
     @classmethod
     def init_from_db_data(cls, data: M_Matcher):

@@ -81,14 +81,14 @@ class UserEvent():
     def sheet_create(event: AstrMessageEvent):
         user_qq = int(event.get_sender_id())
         user = UserManager.get_user(user_qq)
-        spreadsheet = FeiShuKahuna.create_user_spreadsheet(user.user_qq)
+        spreadsheet = FeiShuKahuna.create_user_plan_spreadsheet(user.user_qq)
         FeiShuKahuna.create_default_spreadsheet(spreadsheet)
         return event.plain_result(f'表格已创建，url: {spreadsheet.url}')
 
     @staticmethod
-    def sheet_url(event: AstrMessageEvent):
+    def sheet_url(event: AstrMessageEvent, plan_name: str):
         user_qq = int(event.get_sender_id())
         user = UserManager.get_user(user_qq)
-        spreadsheet = FeiShuKahuna.get_user_spreadsheet(user.user_qq)
+        spreadsheet = FeiShuKahuna.get_user_plan_spreadsheet(user.user_qq, plan_name)
 
         return event.plain_result(f'您的数据报表： {spreadsheet.url}')

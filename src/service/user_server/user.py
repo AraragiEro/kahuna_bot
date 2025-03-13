@@ -174,7 +174,8 @@ class User():
         self.user_data.plan[plan_name]["prod_block_matcher"] = prod_block_matcher.matcher_name
         self.user_data.plan[plan_name]["manucycletime"] = 24 # hour
         self.user_data.plan[plan_name]['reaccycletime'] = 24
-        self.user_data.plan[plan_name]["plan"] = {}
+        self.user_data.plan[plan_name]['container_block'] = []
+        self.user_data.plan[plan_name]["plan"] = []
         self.user_data.insert_to_db()
 
     def delete_plan_prod(self, plan_name: str, index: int):
@@ -220,6 +221,22 @@ class User():
                 self.user_data.alias[character_data[0]] = character_data[1]
         self.user_data.insert_to_db()
 
+    def add_container_block(self, plan_name: str, container_id: int):
+        if plan_name not in self.user_data.plan:
+            raise KahunaException("plan not found.")
+        if "container_block" not in self.user_data.plan[plan_name]:
+            self.user_data.plan[plan_name]["container_block"] = []
+        if container_id not in self.user_data.plan[plan_name]["container_block"]:
+            self.user_data.plan[plan_name]["container_block"].append(container_id)
+        self.user_data.insert_to_db()
 
+    def del_container_block(self, plan_name: str, container_id: int):
+        if plan_name not in self.user_data.plan:
+            raise KahunaException("plan not found.")
+        if "container_block" not in self.user_data.plan[plan_name]:
+            self.user_data.plan[plan_name]["container_block"] = []
+        if container_id in self.user_data.plan[plan_name]["container_block"]:
+            self.user_data.plan[plan_name]["container_block"].remove(container_id)
+        self.user_data.insert_to_db()
 
 

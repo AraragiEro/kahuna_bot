@@ -8,6 +8,7 @@ from ..database_server.model import MarketOrderCache
 from ..database_server.connect import db
 from .marker import Market
 from ..character_server.character_manager import CharacterManager
+from ..config_server.config import config
 
 # kahuna logger
 from ..log_server import logger
@@ -32,7 +33,8 @@ class MarketManager(metaclass=PluginMeta):
             jita_market = Market("jita")
 
             # TODO 市场权限角色替换
-            frt_market.access_character = CharacterManager.character_dict[2115643725]
+            ac_character_id = int(config['EVE']['MARKET_AC_CHARACTER_ID'])
+            frt_market.access_character = CharacterManager.get_character_by_id(ac_character_id)
 
             cls.market_dict["jita"] = jita_market
             cls.market_dict["frt"] = frt_market

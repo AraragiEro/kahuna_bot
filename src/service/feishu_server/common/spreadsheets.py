@@ -108,6 +108,9 @@ class Sheet:
         x1 = position[0]
         y1 = position[1]
 
+        if len(values) == 0:
+            return None
+
         x2 = x1 + len(values[0]) - 1
         y2 = y1 + len(values) - 1
 

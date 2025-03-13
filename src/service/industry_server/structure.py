@@ -32,7 +32,7 @@ class Structure:
     def insert_to_db(self):
         obj = self.get_from_db()
         if not obj:
-            obj = M_Structure.create()
+            obj = M_Structure()
 
         obj.structure_id = self.structure_id
         obj.name = self.name
