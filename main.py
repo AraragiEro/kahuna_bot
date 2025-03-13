@@ -60,7 +60,7 @@ class KahunaBot(Star):
         asyncio.create_task(refresh_per_min(0, 10, AssetManager.refresh_all_asset))
         asyncio.create_task(refresh_per_min(0, 10, IndustryManager.refresh_running_status))
         asyncio.create_task(refresh_per_min(0, 60, IndustryManager.refresh_system_cost))
-        asyncio.create_task(refresh_per_min(0, 60, IndustryManager.refresh_market_price))
+        asyncio.create_task(refresh_per_min(0, 120, IndustryManager.refresh_market_price))
 
     # 注册指令的装饰器。指令名为 helloworld。注册成功后，发送 `/helloworld` 就会触发这个指令，并回复 `你好, {user_name}!`
     # @filter.custom_filter(SelfFilter1)
