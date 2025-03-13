@@ -1,6 +1,10 @@
+from typing import Any
+
 from oauthlib.oauth2 import InvalidClientIdError, InvalidScopeError
 from pydantic import BaseModel
 from datetime import datetime, timedelta, timezone
+from threading import Lock
+
 import traceback
 
 from ..database_server.model import Character as M_Character
@@ -19,6 +23,9 @@ class Character(BaseModel):
     expires_date: datetime
     corp_id: int
     director: bool = False
+
+    def model_post_init(self, __context: Any) -> None:
+        self._refresh_token_lock = Lock()
 
     @staticmethod
     def get_all_characters():
@@ -60,13 +67,14 @@ class Character(BaseModel):
 
     @property
     def ac_token(self):
-        if not self.token_avaliable:
-            self.refresh_character_token()
+        with self._refresh_token_lock:
+            if not self.token_avaliable:
+                self.refresh_character_token()
         return self.token
 
     @property
     def token_avaliable(self):
-        return self.expires_date.replace(tzinfo=None) > datetime.now().replace(tzinfo=None)
+        return self.expires_date.replace(tzinfo=None) > (datetime.now().replace(tzinfo=None) + timedelta(minutes=10))
 
     @property
     def info(self):

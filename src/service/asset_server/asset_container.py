@@ -56,7 +56,7 @@ class AssetContainer:
         return find_list
 
     @classmethod
-    def find_container(cls, secret_type: str, user_qq: int, ac_token: str):
+    def find_container(cls, secret_type: str, user_qq: int, character):
         # 1. 获取数据
         # 在asset_cache找到type_id==get_id_by_name(secret_type) and quantity==secret_quantity的条目
         secret_data_list = cls.find_secret_data(secret_type)
@@ -84,7 +84,7 @@ class AssetContainer:
 
         container_info = []
         for data in container_data:
-            structure = StructureManager.get_structure(data[2], ac_token=ac_token)
+            structure = StructureManager.get_structure(data[2], ac_token=character.ac_token)
             if not structure:
                 continue
             info = dict(structure)

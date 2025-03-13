@@ -1,5 +1,6 @@
 import requests
 from cachetools import TTLCache, cached
+import traceback
 
 # kahuna logger
 from ..log_server import logger

@@ -366,11 +366,13 @@ class IndustryAnalyser():
         # 按照最大周期使用蓝图直到蓝图归零或流程归零
         # 流程未归零则创造虚空流程
         for bpo in avaliable_bpo_count_list:
+            w_time_eff = time_eff * (1 - bpo[2] / 100)
+            max_runs = math.ceil((cycle_time / w_time_eff) / production_time)
             while bpo[0] > 0 and total_runs_needed > 0:
                 if total_runs_needed >= max_runs:
                     work_list.append(Work(source_id,
                                           mater_eff * (1 - bpo[1] / 100),
-                                          time_eff * (1 - bpo[2] / 100),
+                                          w_time_eff,
                                           max_runs, bpo[3], bpo[4]))
                     total_runs_needed -= max_runs
                     bpo[0] -= 1
@@ -378,7 +380,7 @@ class IndustryAnalyser():
                 else:
                     work_list.append(Work(source_id,
                                           mater_eff * (1 - bpo[1] / 100),
-                                          time_eff * (1 - bpo[2] / 100),
+                                          w_time_eff,
                                           total_runs_needed, bpo[3], bpo[4]))
                     total_runs_needed = 0
                     break

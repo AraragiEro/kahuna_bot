@@ -107,7 +107,7 @@ class AssetEvent():
 
         main_character_id = UserManager.get_main_character_id(user_qq)
         main_character = CharacterManager.get_character_by_id(main_character_id)
-        container_info = AssetContainer.find_container(secret_type, user_qq, main_character.ac_token)
+        container_info = AssetContainer.find_container(secret_type, user_qq, main_character)
 
         print_info = f"找到{len(container_info)}个符合条件的库存空间。\n"
         for container in container_info:
