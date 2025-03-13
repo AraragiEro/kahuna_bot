@@ -65,7 +65,7 @@ class SdeUtils:
 
         result = []
         for type in ship_search:
-            market_list =SdeUtils.get_market_group_list(type.typeID)
+            market_list = SdeUtils.get_market_group_list(type.typeID)
             if 'Battleships' in market_list:
                 result.append(type.typeName)
 
@@ -225,6 +225,7 @@ class SdeUtils:
         try:
             market_tree = cls.get_market_group_tree()
             market_group_id = cls.get_invtpye_node_by_id(type_id).marketGroupID
+            market_group_list = []
             if market_group_id:
                 market_group_list = [cls.get_name_by_id(type_id), cls.get_market_group_name_by_groupid(market_group_id)]
                 parent_nodes = [parent_id for parent_id in market_tree.predecessors(market_group_id)]
@@ -234,7 +235,7 @@ class SdeUtils:
                     market_group_list.append(parent_name)
                     parent_nodes = [parent_id for parent_id in market_tree.predecessors(parent_node)]
                 market_group_list.reverse()
-                return market_group_list
+            return market_group_list
         except Exception as e:
             logger.error(f"get_market_group_list error: {e}")
             return []
