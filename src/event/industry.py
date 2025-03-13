@@ -577,7 +577,7 @@ class IndsEvent:
             return print_name_fuzz_list(event, product)
 
         detail_dict = IndustryAnalyser.get_cost_detail(user, plan_name, product)
-        detail_dict.update({'name': product, 'cn_name': SdeUtils.get_cn_name_by_id(type_id)})
+        detail_dict.update({'name': SdeUtils.get_name_by_id(type_id), 'cn_name': SdeUtils.get_cn_name_by_id(type_id)})
         spreadsheet = FeiShuKahuna.create_user_plan_spreadsheet(user_qq, plan_name)
         cost_sheet = FeiShuKahuna.get_detail_cost_sheet(spreadsheet)
         FeiShuKahuna.output_cost_detail_sheet(cost_sheet, detail_dict)
