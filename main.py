@@ -318,7 +318,7 @@ class KahunaBot(Star):
         yield await IndsEvent.rp_t2mk(event, plan_name)
 
     @Inds_rp.command('战列市场', alias={'btspmk'})
-    async def Inds_rp_t2cost(self, event: AstrMessageEvent, plan_name: str):
+    async def Inds_rp_btsp_cost(self, event: AstrMessageEvent, plan_name: str):
         yield await IndsEvent.rp_battalship_mk(event, plan_name)
 
     @Inds_rp.command('旗舰成本', alias={'capcost'})

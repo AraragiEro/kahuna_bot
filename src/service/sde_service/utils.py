@@ -6,6 +6,7 @@ from cachetools import TTLCache, cached
 
 from ...service.sde_service.database import InvTypes, InvGroups, InvCategories
 from ...service.sde_service.database import MetaGroups, MarketGroups
+from ..log_server import logger
 from ..database_server.model import InvTypeMap, AssetCache
 from ..database_server.model import MarketPriceCache, SystemCostCache
 
@@ -221,19 +222,22 @@ class SdeUtils:
     @classmethod
     @lru_cache(maxsize=1000)
     def get_market_group_list(cls, type_id: int) -> list[str]:
-        market_tree = cls.get_market_group_tree()
-        market_group_id = cls.get_invtpye_node_by_id(type_id).marketGroupID
-        if market_group_id:
-            market_group_list = [cls.get_name_by_id(type_id), cls.get_market_group_name_by_groupid(market_group_id)]
-            parent_nodes = [parent_id for parent_id in market_tree.predecessors(market_group_id)]
-            while parent_nodes:
-                parent_node = parent_nodes[0]
-                parent_name = cls.get_market_group_name_by_groupid(parent_node)
-                market_group_list.append(parent_name)
-                parent_nodes = [parent_id for parent_id in market_tree.predecessors(parent_node)]
-            market_group_list.reverse()
-            return market_group_list
-        return []
+        try:
+            market_tree = cls.get_market_group_tree()
+            market_group_id = cls.get_invtpye_node_by_id(type_id).marketGroupID
+            if market_group_id:
+                market_group_list = [cls.get_name_by_id(type_id), cls.get_market_group_name_by_groupid(market_group_id)]
+                parent_nodes = [parent_id for parent_id in market_tree.predecessors(market_group_id)]
+                while parent_nodes:
+                    parent_node = parent_nodes[0]
+                    parent_name = cls.get_market_group_name_by_groupid(parent_node)
+                    market_group_list.append(parent_name)
+                    parent_nodes = [parent_id for parent_id in market_tree.predecessors(parent_node)]
+                market_group_list.reverse()
+                return market_group_list
+        except Exception as e:
+            logger.error(f"get_market_group_list error: {e}")
+            return []
 
         # market_group_id = cls.get_invtpye_node_by_id(type_id).marketGroupID
         # market_group_list = [cls.get_name_by_id(type_id), cls.get_market_group_name(market_group_id)]
