@@ -64,6 +64,10 @@ class FeiShuKahuna:
         return spreadsheet.create_sheet('T2常规市场')
 
     @classmethod
+    def get_battleship_market_sheet(cls, spreadsheet: Spreadsheets) -> Sheet:
+        return spreadsheet.create_sheet('战列市场')
+
+    @classmethod
     def get_detail_cost_sheet(cls, spreadsheet: Spreadsheets) -> Sheet:
         return spreadsheet.create_sheet('单品分析')
 
@@ -168,9 +172,9 @@ class FeiShuKahuna:
         sheet.set_format([1, 1], [1, len(data)], format_data)
 
     @classmethod
-    def output_t2mk_sheet(cls, sheet: Sheet, data: list):
+    def output_mk_sheet(cls, sheet: Sheet, data: list):
         data = [['id', 'name', 'cn_name', '利润', '利润率', '月利润空间', '成本', '4h出单', '吉他收单', '吉他出单',
-                 '月流水', '月销量']] + data
+                 '月流水', '月销量', 'meta']] + data
         sheet.set_value([1, 1], data)
 
         sheet.set_format([4,1], [1, len(data)], {'formatter': '#,##0.00'})

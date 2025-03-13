@@ -471,23 +471,65 @@ class IndsEvent:
         # 
         # t2_cost_data = IndustryAnalyser.get_cost_data(user, plan_name, t2_plan)
         with ThreadPoolExecutor(max_workers=1) as executor:
-            t2_ship_id_list = [SdeUtils.get_id_by_name(name) for name in SdeUtils.get_t2_ship()]
+            t2_ship_list = SdeUtils.get_t2_ship()
+            t2_ship_id_list = [SdeUtils.get_id_by_name(name) for name in t2_ship_list]
             await MarketHistory.refresh_market_history(t2_ship_id_list)
 
             # t2mk_data = IndustryAdvice.t2_ship_advice_report(user, plan_name)
-            future = executor.submit(IndustryAdvice.t2_ship_advice_report, user, plan_name)
+            future = executor.submit(IndustryAdvice.advice_report, user, plan_name, t2_ship_list)
             while not future.done():
                 await asyncio.sleep(1)
             t2mk_data = future.result()
 
         spreadsheet = FeiShuKahuna.create_user_plan_spreadsheet(user_qq, plan_name)
         t2_cost_sheet = FeiShuKahuna.get_t2_ship_market_sheet(spreadsheet)
-        FeiShuKahuna.output_t2mk_sheet(t2_cost_sheet, t2mk_data)
+        FeiShuKahuna.output_mk_sheet(t2_cost_sheet, t2mk_data)
 
         res_str =  (f"执行完成, 当前计划条件T2常规市场分析:{t2_cost_sheet.url}\n\n"
                     f"推荐制造：\n")
         for index, data in enumerate(t2mk_data[:10]):
             res_str += (f'{index+1}.{data[1]}\n'
+                        f'  利润率:{data[4]:.2%}\n'
+                        f'  月利润:{data[5]:,.2f}\n'
+                        f'  月销量:{data[11]:,}\n')
+
+        return event.plain_result(res_str)
+
+    @staticmethod
+    async def rp_battalship_mk(event: AstrMessageEvent, plan_name: str):
+        user_qq = int(event.get_sender_id())
+        user = UserManager.get_user(user_qq)
+        if plan_name not in user.user_data.plan:
+            raise KahunaException(f"plan {plan_name} not exist")
+
+        with ThreadPoolExecutor(max_workers=1) as executor:
+            battleship_list = SdeUtils.get_battleship()
+            battalship_ship_id_list = [SdeUtils.get_id_by_name(name) for name in battleship_list]
+            await MarketHistory.refresh_market_history(battalship_ship_id_list)
+            future = executor.submit(IndustryAdvice.advice_report, user, plan_name, battleship_list)
+            while not future.done():
+                await asyncio.sleep(1)
+            battalship_mk_data = future.result()
+
+        for data in battalship_mk_data:
+            if data[-1] == 'faction':
+                if 'Navy' in data[1] or 'Fleet' in data[1]:
+                    more_cost = 100000000
+                else:
+                    more_cost = 200000000
+                data[6] += more_cost
+                data[3] -= more_cost
+                data[4] = data[3] / data[6]
+                data[5] = data[10] * data[4]
+
+        spreadsheet = FeiShuKahuna.create_user_plan_spreadsheet(user_qq, plan_name)
+        battalship_mk_sheet = FeiShuKahuna.get_battleship_market_sheet(spreadsheet)
+        FeiShuKahuna.output_mk_sheet(battalship_mk_sheet, battalship_mk_data)
+
+        res_str = (f"执行完成, 当前计划条件战列市场分析:{battalship_mk_sheet.url}\n\n"
+                   f"推荐制造：\n")
+        for index, data in enumerate(battalship_mk_data[:10]):
+            res_str += (f'{index + 1}.{data[1]}\n'
                         f'  利润率:{data[4]:.2%}\n'
                         f'  月利润:{data[5]:,.2f}\n'
                         f'  月销量:{data[11]:,}\n')

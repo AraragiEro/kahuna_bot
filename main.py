@@ -317,6 +317,10 @@ class KahunaBot(Star):
     async def Inds_rp_t2cost(self, event: AstrMessageEvent, plan_name: str):
         yield await IndsEvent.rp_t2mk(event, plan_name)
 
+    @Inds_rp.command('战列市场', alias={'btspmk'})
+    async def Inds_rp_t2cost(self, event: AstrMessageEvent, plan_name: str):
+        yield await IndsEvent.rp_battalship_mk(event, plan_name)
+
     @Inds_rp.command('旗舰成本', alias={'capcost'})
     async def Inds_rp_capcost(self, event: AstrMessageEvent, plan_name: str):
         yield await IndsEvent.rp_capcost(event, plan_name)
@@ -360,6 +364,8 @@ class KahunaBot(Star):
     @llm_tool(name='eve_knowlage_bot')
     async def eve_knowlage_bot(self, event: AstrMessageEvent, question_str: str) -> MessageEventResult:
         ''' 向eveonline和FRT兄弟会wiki知识库机器人提问获得eveonline或FRT联盟wiki相关内容。
+        如果询问谋篇更新日志的地址，可以查询。
+        如果询问具体的更新日志内容，则调用fetch_url访问。如果没有提供url，则查询url地址并返回。
 
         Args:
             question_str(string): 用于向evewiki聊天机器人提问的文本。

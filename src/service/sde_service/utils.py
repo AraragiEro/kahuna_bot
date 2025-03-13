@@ -54,6 +54,25 @@ class SdeUtils:
 
     @staticmethod
     @lru_cache(maxsize=2)
+    def get_battleship() -> list:
+        ship_search = (
+            InvTypes.select(InvTypes.typeName)
+            .join(InvGroups, on=(InvTypes.groupID == InvGroups.groupID))
+            .join(InvCategories, on=(InvGroups.categoryID == InvCategories.categoryID))
+            .where(InvCategories.categoryName == "Ship")
+        )
+
+        result = []
+        for type in ship_search:
+            market_list =SdeUtils.get_market_group_list(type.typeID)
+            if 'Battleships' in market_list:
+                result.append(type.typeName)
+
+        return result
+
+
+    @staticmethod
+    @lru_cache(maxsize=2)
     def get_capital_ship() -> list:
         capital_ship_search = (
                 InvTypes.select(InvTypes.typeName, InvTypes.typeID, InvTypes.marketGroupID)

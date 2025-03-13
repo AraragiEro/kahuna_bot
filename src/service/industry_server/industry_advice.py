@@ -1,4 +1,5 @@
 import asyncio
+from pickle import BINPUT
 
 from .industry_analyse import IndustryAnalyser
 from ..sde_service.utils import SdeUtils
@@ -10,13 +11,13 @@ from ..market_server.market_manager import MarketManager
 
 class IndustryAdvice:
     @classmethod
-    def t2_ship_advice_report(cls, user: User, plan_name: str):
+    def advice_report(cls, user: User, plan_name: str, product_list: list):
         jita_mk = MarketManager.get_market_by_type('jita')
         vale_mk = MarketManager.get_market_by_type('frt')
 
-        t2_ship_list = SdeUtils.get_t2_ship()
-        t2_ship_id_list = [SdeUtils.get_id_by_name(name) for name in t2_ship_list]
-        t2_plan = [[ship, 1] for ship in t2_ship_list]
+        input_list = product_list
+        t2_ship_id_list = [SdeUtils.get_id_by_name(name) for name in input_list]
+        t2_plan = [[ship, 1] for ship in input_list]
 
         t2_cost_data = IndustryAnalyser.get_cost_data(user, plan_name, t2_plan)
         t2_cost_data = [[name] + value for name, value in t2_cost_data.items()]
@@ -40,7 +41,9 @@ class IndustryAdvice:
                 jita_sell,  # 吉他出单
                 vale_mk_his_data['monthflow'],  # 月流水
                 vale_mk_his_data['month_volume'], # 月销量
+                SdeUtils.get_metaname_by_typeid(tid)    # 元组信息
             ]
+
 
             t2ship_data.append(market_data)
 
