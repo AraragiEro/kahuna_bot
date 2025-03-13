@@ -101,6 +101,8 @@ class IndustryAnalyser():
 
         self.analysed_status = False
 
+        self.bp_block_level = 2
+
         # 需要持久化的设置
         self.plan_name = None
         self.plan_list = None
@@ -134,7 +136,7 @@ class IndustryAnalyser():
         # bp
         bp_id = BPManager.get_bp_id_by_prod_typeid(type_id)
         bp_name = SdeUtils.get_name_by_id(bp_id)
-        if bp_name in matcher.matcher_data["bp"]:
+        if bp_name in matcher.matcher_data["bp"] and matcher.matcher_data["bp"][bp_name] <= self.bp_block_level:
             return True
 
         # 找到符合条件的最小市场分类
@@ -142,21 +144,21 @@ class IndustryAnalyser():
         mk_block = False
         largest_index = 0
         for market_group, _ in matcher.matcher_data["market_group"].items():
-            if market_group in mklist:
+            if market_group in mklist and matcher.matcher_data["market_group"][market_group] <= self.bp_block_level:
                 mk_block = mk_block or True
         if mk_block:
             return True
 
         group = SdeUtils.get_groupname_by_id(type_id)
-        if group in matcher.matcher_data["group"]:
+        if group in matcher.matcher_data["group"] and matcher.matcher_data["group"][group] <= self.bp_block_level:
             return True
 
         meta = SdeUtils.get_metaname_by_typeid(type_id)
-        if meta in matcher.matcher_data["meta"]:
+        if meta in matcher.matcher_data["meta"] and matcher.matcher_data["meta"][meta] <= self.bp_block_level:
             return True
 
         category = SdeUtils.get_category_by_id(type_id)
-        if category in matcher.matcher_data["category"]:
+        if category in matcher.matcher_data["category"] and matcher.matcher_data["category"][category] <= self.bp_block_level:
             return True
 
         return False
@@ -261,6 +263,7 @@ class IndustryAnalyser():
         while bfs_queue:
             index, type_id, quantity = bfs_queue.pop(0)
             dg.add_node(type_id)
+            # 没有蓝图信息 或 在分解黑名单
             if (bp_materials := BPManager.get_bp_materials(type_id)) is None or self.in_pd_block(type_id):
                 self.anaed_set.add((index, type_id))
                 continue
@@ -492,10 +495,11 @@ class IndustryAnalyser():
 
             # root节点特殊处理
             if father_id == "root":
-                for index in index_list:
-                    total_index_need[index] = bp_need_quantity
-                    actually_index_need[index] = bp_need_quantity
+                matching_edges = [edge[2] for edge in need_cal_edge if edge[2]['index'] in index_list]
+                total_index_need.update({edge['index']: edge['quantity'] for edge in matching_edges})
+                actually_index_need.update({edge['index']: edge['quantity'] for edge in matching_edges})
                 continue
+
             # if 'index_quantity' not in father_work_node:
             #     print(f'{father_id}:{father_work_node}')
             father_actually_need_list = father_work_node['index_quantity']
@@ -1098,6 +1102,7 @@ class IndustryAnalyser():
     @classmethod
     def signal_async_progress_work_type(cls, user, plan_name, plan_list):
         analyser = cls.create_analyser_by_plan(user, plan_name)
+        analyser.bp_block_level = 1
         material_dict = analyser.analyse_progress_work_type(plan_list)
         material_cost = 0
         for node in [node for node, degree in analyser.global_graph.out_degree() if degree == 0]:
@@ -1136,6 +1141,7 @@ class IndustryAnalyser():
     @classmethod
     def get_cost_detail(cls, user, plan_name: str, product: str):
         analyser = cls.create_analyser_by_plan(user, plan_name)
+        analyser.bp_block_level = 1
         analyser.analyse_progress_work_type([[product, 1]])
 
         res = {'material': dict(), 'group_detail': dict()}

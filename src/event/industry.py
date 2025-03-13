@@ -206,6 +206,9 @@ class IndsEvent:
             matche_key_check, res = check_match_key(matcher_key)
             if not matche_key_check:
                 return res
+            # 如果关键词类型为bp，标准化为英文
+            if matcher_key_type == "bp":
+                matcher_key = SdeUtils.get_name_by_id(SdeUtils.get_id_by_name(matcher_key))
 
             matcher.matcher_data[matcher_key_type][matcher_key] = {"mater_eff": mater_eff, "time_eff": time_eff}
             matcher.insert_to_db()
@@ -219,6 +222,8 @@ class IndsEvent:
             matche_key_check, res = check_match_key(matcher_key)
             if not matche_key_check:
                 return res
+            if matcher_key_type == "bp":
+                matcher_key = SdeUtils.get_name_by_id(SdeUtils.get_id_by_name(matcher_key))
 
             character = CharacterManager.get_character_by_id(UserManager.get_main_character_id(int(event.get_sender_id())))
             structure = StructureManager.get_structure(structure_id, character.ac_token)
@@ -230,15 +235,18 @@ class IndsEvent:
 
             return event.plain_result("已配置，可以使用Inds matcher info 查看详情。")
 
-        elif matcher.matcher_type == "prod_block" and len(config_data) >= 1:
-            matcher_key = " ".join(config_data)
+        elif matcher.matcher_type == "prod_block" and len(config_data) >= 2:
+            matcher_key = " ".join(config_data[:-1])
+            block_level = int(config_data[-1])
 
             # 确认信息无误
             matche_key_check, res = check_match_key(matcher_key)
             if not matche_key_check:
                 return res
+            if matcher_key_type == "bp":
+                matcher_key = SdeUtils.get_name_by_id(SdeUtils.get_id_by_name(matcher_key))
 
-            matcher.matcher_data[matcher_key_type][matcher_key] = 1
+            matcher.matcher_data[matcher_key_type][matcher_key] = block_level
             matcher.insert_to_db()
 
             return event.plain_result("已配置，可以使用Inds matcher info 查看详情。")
@@ -441,6 +449,7 @@ class IndsEvent:
 
         with ThreadPoolExecutor(max_workers=1) as executor:
             analyser = IndustryAnalyser.get_analyser_by_plan(user, plan_name)
+            analyser.bp_block_level = 2
             future = executor.submit(analyser.get_work_tree_data)
             while not future.done():
                 await asyncio.sleep(1)
@@ -512,7 +521,7 @@ class IndsEvent:
             battalship_mk_data = future.result()
 
         for data in battalship_mk_data:
-            if data[-1] == 'faction':
+            if data[-1] == 'Faction':
                 if 'Navy' in data[1] or 'Fleet' in data[1]:
                     more_cost = 100000000
                 else:
