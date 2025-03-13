@@ -572,6 +572,7 @@ class IndsEvent:
         user = UserManager.get_user(user_qq)
         if plan_name not in user.user_data.plan:
             raise KahunaException(f"plan {plan_name} not exist")
+        product = ' '.join(event.get_message_str().split(" ")[4:])
         if (type_id := SdeUtils.get_id_by_name(product)) is None:
             return print_name_fuzz_list(event, product)
 
