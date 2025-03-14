@@ -1,3 +1,4 @@
+import multiprocessing
 import queue
 from asyncio import gather
 from errno import ECHILD
@@ -1126,7 +1127,7 @@ class IndustryAnalyser():
         """ 计算planlist中的材料成本，用于批量计算 """
         # analyser = cls.create_analyser_by_plan(user, plan_name)
         from concurrent.futures import ThreadPoolExecutor
-        with ThreadPoolExecutor(max_workers=20) as executor:
+        with ThreadPoolExecutor(max_workers=multiprocessing.cpu_count() * 4) as executor:
             futures = [executor.submit(cls.signal_async_progress_work_type, user, plan_name, [plan])
                        for plan in plan_list]
             cost_dict = dict()
